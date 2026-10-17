@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  itest-postgres:
+    image: postgres:17-alpine
+    container_name: itest-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERPASS:-itest_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-itest_platform}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+      - ./schemas:/opt/schemas:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER:-postgres} -d ${POSTGRES_DB:-itest_platform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - itest-network
+
+networks:
+  itest-network:
+    name: itest-network
+    driver: bridge
+
+volumes:
+  pgdata:
+    name: itest-postgres-data
