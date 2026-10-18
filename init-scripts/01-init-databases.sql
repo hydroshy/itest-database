@@ -61,3 +61,9 @@ GRANT USAGE ON SCHEMA system_schema TO itest_ops_user;
 GRANT USAGE ON SCHEMA plugins_schema TO itest_ops_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA system_schema GRANT SELECT ON TABLES TO itest_ops_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA plugins_schema GRANT SELECT ON TABLES TO itest_ops_user;
+
+-- 5. Set default search_path for service roles
+ALTER ROLE itest_system_user SET search_path TO system_schema, public;
+ALTER ROLE itest_plugins_user SET search_path TO plugins_schema, system_schema, public;
+ALTER ROLE itest_ops_user SET search_path TO ops_schema, system_schema, plugins_schema, public;
+
