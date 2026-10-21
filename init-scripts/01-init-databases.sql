@@ -14,6 +14,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE SCHEMA IF NOT EXISTS system_schema;
 CREATE SCHEMA IF NOT EXISTS plugins_schema;
 CREATE SCHEMA IF NOT EXISTS ops_schema;
+CREATE SCHEMA IF NOT EXISTS lorawan_chirpstack;
 
 -- 3. Create Dedicated Service Roles / Users
 DO $$
@@ -62,8 +63,26 @@ GRANT USAGE ON SCHEMA plugins_schema TO itest_ops_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA system_schema GRANT SELECT ON TABLES TO itest_ops_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA plugins_schema GRANT SELECT ON TABLES TO itest_ops_user;
 
+-- LORAWAN CHIRPSTACK SCHEMA: Shared usage for plugins and system users
+GRANT USAGE, CREATE ON SCHEMA lorawan_chirpstack TO itest_plugins_user;
+GRANT ALL ON ALL TABLES IN SCHEMA lorawan_chirpstack TO itest_plugins_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA lorawan_chirpstack TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA lorawan_chirpstack GRANT ALL ON TABLES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA lorawan_chirpstack GRANT ALL ON SEQUENCES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA lorawan_chirpstack GRANT ALL ON FUNCTIONS TO itest_plugins_user;
+
+GRANT USAGE, CREATE ON SCHEMA lorawan_chirpstack TO itest_system_user;
+GRANT ALL ON ALL TABLES IN SCHEMA lorawan_chirpstack TO itest_system_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA lorawan_chirpstack TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA lorawan_chirpstack GRANT ALL ON TABLES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA lorawan_chirpstack GRANT ALL ON SEQUENCES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA lorawan_chirpstack GRANT ALL ON FUNCTIONS TO itest_system_user;
+
+GRANT USAGE ON SCHEMA lorawan_chirpstack TO itest_ops_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA lorawan_chirpstack GRANT SELECT ON TABLES TO itest_ops_user;
+
 -- 5. Set default search_path for service roles
-ALTER ROLE itest_system_user SET search_path TO system_schema, public;
-ALTER ROLE itest_plugins_user SET search_path TO plugins_schema, system_schema, public;
-ALTER ROLE itest_ops_user SET search_path TO ops_schema, system_schema, plugins_schema, public;
+ALTER ROLE itest_system_user SET search_path TO system_schema, lorawan_chirpstack, public;
+ALTER ROLE itest_plugins_user SET search_path TO plugins_schema, lorawan_chirpstack, system_schema, public;
+ALTER ROLE itest_ops_user SET search_path TO ops_schema, system_schema, plugins_schema, lorawan_chirpstack, public;
 

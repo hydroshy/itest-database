@@ -1,4 +1,4 @@
--- ==============================================================================
+﻿-- ==============================================================================
 -- ITEST-SYSTEM - CORE MICRO-KERNEL SCHEMA (POSTGRESQL 17)
 -- ==============================================================================
 -- File: schemas/system/schema.sql
@@ -40,11 +40,12 @@ CREATE TABLE IF NOT EXISTS system_schema."role_permissions" (
 CREATE TABLE IF NOT EXISTS system_schema."users" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "username" VARCHAR(255) UNIQUE NOT NULL,
-  "password" VARCHAR(255) NOT NULL,
+  "passwordHash" VARCHAR(255) NOT NULL,
   "email" VARCHAR(255),
-  "firstName" VARCHAR(255),
-  "lastName" VARCHAR(255),
+  "fullName" VARCHAR(255),
+  "userType" VARCHAR(50) NOT NULL DEFAULT 'USER',
   "isActive" BOOLEAN NOT NULL DEFAULT true,
+  "createdById" UUID,
   "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
   "updatedAt" TIMESTAMP NOT NULL DEFAULT now()
 );
@@ -111,11 +112,13 @@ CREATE INDEX IF NOT EXISTS "idx_unified_devices_protocol" ON system_schema."unif
 
 -- Initial Core Seed Data
 INSERT INTO system_schema."roles" ("code", "name", "description")
-VALUES 
-  ('admin', 'System Administrator', 'Full administrative access to micro-kernel core'),
-  ('operator', 'System Operator', 'Operational and monitoring access'),
-  ('viewer', 'System Viewer', 'Read-only access')
-ON CONFLICT ("code") DO NOTHING;
+VALUES
+  ('admin', 'Admin', 'Full administrative access to micro-kernel core'),
+  ('sub_admin', 'Sub-Admin', 'Delegated administrative privileges'),
+  ('operator', 'Operator', 'Operational, testing and device execution access')
+ON CONFLICT ("code") DO UPDATE SET
+  "name" = EXCLUDED."name",
+  "description" = EXCLUDED."description";
 
 INSERT INTO system_schema."permission" ("name", "description", "module", "action")
 VALUES
@@ -125,3 +128,42 @@ VALUES
   ('system:devices:read', 'View registered devices', 'system', 'read'),
   ('system:devices:write', 'Register and edit devices', 'system', 'write')
 ON CONFLICT ("name") DO NOTHING;
+
+-- Grant permissions to Admin role
+INSERT INTO system_schema."role_permissions" ("role_id", "permission_id")
+SELECT r."id", p."id"
+FROM system_schema."roles" r
+CROSS JOIN system_schema."permission" p
+WHERE r."code" = 'admin'
+ON CONFLICT DO NOTHING;
+
+-- Grant operational permissions to Operator role
+INSERT INTO system_schema."role_permissions" ("role_id", "permission_id")
+SELECT r."id", p."id"
+FROM system_schema."roles" r
+CROSS JOIN system_schema."permission" p
+WHERE r."code" = 'operator' AND p."name" IN ('system:devices:read', 'system:devices:write')
+ON CONFLICT DO NOTHING;
+
+-- Seed Default Admin Account: admin / abc@123 (bcrypt hash)
+INSERT INTO system_schema."users" ("username", "passwordHash", "email", "fullName", "userType", "isActive")
+VALUES (
+  'admin',
+  '$2b$10$S3YCsMDJT1NsTLaqmQEgDeNWuQaYSowIriOEsWyO9KohVzf7V3Yha',
+  'admin@itest.local',
+  'System Administrator',
+  'ADMIN',
+  true
+)
+ON CONFLICT ("username") DO UPDATE SET
+  "passwordHash" = EXCLUDED."passwordHash",
+  "userType" = 'ADMIN',
+  "isActive" = true;
+
+-- Link Default Admin to Admin role
+INSERT INTO system_schema."user_role" ("user_id", "role_id")
+SELECT u."id", r."id"
+FROM system_schema."users" u
+JOIN system_schema."roles" r ON r."code" = 'admin'
+WHERE u."username" = 'admin'
+ON CONFLICT DO NOTHING;

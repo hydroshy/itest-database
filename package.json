@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test-schema-integrity.js",
+    "migrate": "node scripts/migrate.js --source=all",
+    "migrate:lorawan": "node scripts/migrate.js --source=lorawan-chirpstack"
   },
   "keywords": [],
   "author": "",

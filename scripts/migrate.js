@@ -46,6 +46,11 @@ const SOURCES = {
     name: 'itest-ops-agent (Telemetry & Monitoring)',
     dir: path.join(SCHEMAS_DIR, 'ops-agent'),
     schema: 'ops_schema'
+  },
+  'lorawan-chirpstack': {
+    name: 'LoRaWAN ChirpStack Plugin',
+    dir: path.join(SCHEMAS_DIR, 'lorawan-chirpstack/migrations'),
+    schema: 'lorawan_chirpstack'
   }
 };
 

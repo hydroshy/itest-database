@@ -3,6 +3,7 @@
 Hệ thống cơ sở dữ liệu tập trung thế hệ mới của nền tảng **ITEST Platform**, triển khai trên nền tảng **PostgreSQL 17 Alpine** với kiến trúc phân lập multi-schema và phân quyền truy cập tối thiểu (least-privilege) độc lập cho từng phân hệ:
 - **`system_schema`**: Lõi Micro-kernel Core Backbone (`itest-system`) - Quản lý RBAC, User, Audit log, Device Registry.
 - **`plugins_schema`**: Hệ sinh thái IoT Plugins độc lập (`itest-plugins`) - Quản lý cấu hình plugin, channel truyền thông, time-series telemetry và command execution logs.
+- **`lorawan_chirpstack`**: Phân hệ chuyên biệt cho ChirpStack LoRaWAN Plugin - Quản lý connection profile, API token, credentials và tham chiếu tenant cho `network_servers`.
 - **`ops_schema`**: Trạm vận hành, giám sát và cảnh báo thời gian thực (`itest-ops-agent`) - Quản lý danh sách targets giám sát đa database, telemetry metrics và audit actions.
 
 ---

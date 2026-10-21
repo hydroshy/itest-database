@@ -9,3 +9,4 @@
 \i /opt/schemas/system/schema.sql
 \i /opt/schemas/plugins/schema.sql
 \i /opt/schemas/ops-agent/schema.sql
+\i /opt/schemas/lorawan-chirpstack/schema.sql
