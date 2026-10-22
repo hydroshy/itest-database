@@ -2,10 +2,13 @@
 -- MIGRATION: 001_create_traceability_manager_tables.sql
 -- Module: traceability-manager
 -- Schema: traceability_manager
--- Description: Creates isolated schema traceability_manager and tables
---              traceability_order (ERP work order level) and traceability_device
---              (device unit level) with cascade foreign keys, indices, triggers,
---              analytical Metabase lifecycle view, and rich data dictionary comments.
+-- Description: Creates isolated schema traceability_manager and tables:
+--              1. traceability_so (Sale Orders)
+--              2. traceability_wa (Work Authorizations under SO)
+--              3. traceability_device (Device Units with hardware testing data
+--                 matching WSLRW-C-RS485-01_tested.csv format & final config link)
+--              Includes cascade foreign keys, indices, triggers, and
+--              analytical Metabase lifecycle view v_device_traceability_lifecycle.
 -- ==============================================================================
 
 -- 1. Ensure Schema exists
@@ -33,88 +36,101 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 5. ERP Work Orders Table (Tầng Lô Lệnh Sản Xuất ERP)
-CREATE TABLE IF NOT EXISTS traceability_manager."traceability_order" (
+-- 5. Sale Orders Table (Tầng Đơn Bán Hàng)
+CREATE TABLE IF NOT EXISTS traceability_manager."traceability_so" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "so_number" VARCHAR(50) NOT NULL,
-  "wa_number" VARCHAR(50) NOT NULL,
-  "item_code" VARCHAR(100) NOT NULL,
-  "connectivity" VARCHAR(20) NOT NULL DEFAULT 'LoRaWAN',
-  "total_quantity" INTEGER NOT NULL DEFAULT 0,
-  "notes" TEXT,
-  "created_by" VARCHAR(100) DEFAULT 'system',
-  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "uq_traceability_order_so_wa_item" UNIQUE ("so_number", "wa_number", "item_code")
-);
-
--- Comments for Metabase & BI Documentation
-COMMENT ON TABLE traceability_manager."traceability_order" IS 'ERP Work Orders & Production Batches defining SO_NUMBER, WA_NUMBER, ITEM_CODE and connectivity type';
-COMMENT ON COLUMN traceability_manager."traceability_order"."id" IS 'Primary Key UUID of the production order';
-COMMENT ON COLUMN traceability_manager."traceability_order"."so_number" IS 'Sales Order Number from ERP (e.g. SO/2026/01850)';
-COMMENT ON COLUMN traceability_manager."traceability_order"."wa_number" IS 'Work Authorization / Manufacturing Order Number (e.g. WA/2026/00412)';
-COMMENT ON COLUMN traceability_manager."traceability_order"."item_code" IS 'Finished goods item code from ERP (e.g. WSLRW-ATH-11)';
-COMMENT ON COLUMN traceability_manager."traceability_order"."connectivity" IS 'Physical wireless connectivity protocol: LoRaWAN, Sigfox, NB-IoT, Others';
-COMMENT ON COLUMN traceability_manager."traceability_order"."total_quantity" IS 'Target manufacturing quantity for this work order';
-COMMENT ON COLUMN traceability_manager."traceability_order"."created_by" IS 'Author / system username creating the work order';
-
--- Trigger for updated_at on traceability_order
-DROP TRIGGER IF EXISTS trg_traceability_order_updated_at ON traceability_manager."traceability_order";
-CREATE TRIGGER trg_traceability_order_updated_at
-BEFORE UPDATE ON traceability_manager."traceability_order"
-FOR EACH ROW
-EXECUTE FUNCTION traceability_manager.set_current_timestamp_updated_at();
-
--- Indexes for traceability_order
-CREATE INDEX IF NOT EXISTS "idx_traceability_order_so_number" ON traceability_manager."traceability_order" ("so_number");
-CREATE INDEX IF NOT EXISTS "idx_traceability_order_wa_number" ON traceability_manager."traceability_order" ("wa_number");
-CREATE INDEX IF NOT EXISTS "idx_traceability_order_item_code" ON traceability_manager."traceability_order" ("item_code");
-CREATE INDEX IF NOT EXISTS "idx_traceability_order_connectivity" ON traceability_manager."traceability_order" ("connectivity");
-CREATE INDEX IF NOT EXISTS "idx_traceability_order_created_at" ON traceability_manager."traceability_order" ("created_at");
-
--- 6. Individual Device Units Table (Tầng Thiết Bị Cá Thể)
-CREATE TABLE IF NOT EXISTS traceability_manager."traceability_device" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "order_id" UUID NOT NULL REFERENCES traceability_manager."traceability_order"("id") ON DELETE CASCADE,
-  "serial_number" VARCHAR(100) NOT NULL UNIQUE,
-  "sku" VARCHAR(100) NOT NULL,
-  "fw_version" VARCHAR(50) NOT NULL,
-  "hw_version" VARCHAR(50),
-  "me_version" VARCHAR(50),
-  "dev_eui" VARCHAR(32),
-  "app_eui" VARCHAR(32),
-  "app_key" VARCHAR(64),
-  "sigfox_id" VARCHAR(16),
-  "sigfox_pac" VARCHAR(32),
-  "telecom_credentials" JSONB DEFAULT '{}'::jsonb,
-  "final_config_session_id" UUID,
-  "config_status" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-  "chirpstack_synced" BOOLEAN NOT NULL DEFAULT FALSE,
-  "status" VARCHAR(30) NOT NULL DEFAULT 'INITIAL',
+  "so_number" VARCHAR(50) NOT NULL UNIQUE,
+  "customer_name" VARCHAR(255),
   "notes" TEXT,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Comments for Metabase & BI Documentation
-COMMENT ON TABLE traceability_manager."traceability_device" IS 'Individual manufactured devices with hardware revisions, wireless credentials, and manufacturing execution link';
-COMMENT ON COLUMN traceability_manager."traceability_device"."id" IS 'Primary Key UUID of the device';
-COMMENT ON COLUMN traceability_manager."traceability_device"."order_id" IS 'Foreign Key referencing traceability_order(id)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."serial_number" IS 'Unique physical serial number printed on label/enclosure (e.g. SN202610220001)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."sku" IS 'Product SKU code';
-COMMENT ON COLUMN traceability_manager."traceability_device"."fw_version" IS 'Installed Firmware version (compatible with long_fw)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."hw_version" IS 'Hardware PCBA revision (e.g. HW1.2)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."me_version" IS 'Mechanical enclosure revision (e.g. ME1.0)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."dev_eui" IS 'LoRaWAN Device EUI (16 hex characters)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."app_eui" IS 'LoRaWAN JoinEUI / AppEUI (16 hex characters)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."app_key" IS 'LoRaWAN OTAA 128-bit Application Key (32 hex characters)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."sigfox_id" IS 'Sigfox Device ID (8 hex characters)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."sigfox_pac" IS 'Sigfox Initial Porting Access Code (16 hex characters)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."telecom_credentials" IS 'Flexible JSONB payload for cellular IMEI/IMSI, BLE MAC, or private keys';
-COMMENT ON COLUMN traceability_manager."traceability_device"."final_config_session_id" IS 'Reference to finalconfig_manager.finalconfig_execution_session(id)';
-COMMENT ON COLUMN traceability_manager."traceability_device"."config_status" IS 'Final configuration status: PENDING, CONFIGURED_PASS, CONFIGURED_FAIL';
-COMMENT ON COLUMN traceability_manager."traceability_device"."chirpstack_synced" IS 'Flag indicating whether device credentials have been provisioned to Network Server';
-COMMENT ON COLUMN traceability_manager."traceability_device"."status" IS 'Lifecycle stage: INITIAL, CONFIGURED, QA_PASSED, PACKED, SHIPPED';
+COMMENT ON TABLE traceability_manager."traceability_so" IS 'Quản lý Đơn Bán Hàng (Sale Order - SO)';
+COMMENT ON COLUMN traceability_manager."traceability_so"."id" IS 'Khóa chính UUID duy nhất';
+COMMENT ON COLUMN traceability_manager."traceability_so"."so_number" IS 'Mã Đơn Bán Hàng duy nhất (ví dụ: SO/2026/01855)';
+COMMENT ON COLUMN traceability_manager."traceability_so"."customer_name" IS 'Tên khách hàng hoặc đối tác mua hàng';
+COMMENT ON COLUMN traceability_manager."traceability_so"."notes" IS 'Ghi chú bổ sung';
+
+-- Trigger for updated_at on traceability_so
+DROP TRIGGER IF EXISTS trg_traceability_so_updated_at ON traceability_manager."traceability_so";
+CREATE TRIGGER trg_traceability_so_updated_at
+BEFORE UPDATE ON traceability_manager."traceability_so"
+FOR EACH ROW
+EXECUTE FUNCTION traceability_manager.set_current_timestamp_updated_at();
+
+-- 6. Work Authorizations Table (Tầng Lệnh Sản Xuất / Lô Sản Xuất thuộc SO)
+CREATE TABLE IF NOT EXISTS traceability_manager."traceability_wa" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "so_id" UUID NOT NULL REFERENCES traceability_manager."traceability_so"("id") ON DELETE CASCADE,
+  "wa_number" VARCHAR(50) NOT NULL UNIQUE,
+  "item_code" VARCHAR(100),
+  "planned_quantity" INTEGER NOT NULL DEFAULT 0,
+  "notes" TEXT,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE traceability_manager."traceability_wa" IS 'Quản lý Lệnh Sản Xuất (Work Authorization - WA) thuộc Sale Order';
+COMMENT ON COLUMN traceability_manager."traceability_wa"."id" IS 'Khóa chính UUID duy nhất';
+COMMENT ON COLUMN traceability_manager."traceability_wa"."so_id" IS 'Tham chiếu ngoại tới traceability_so(id) với CASCADE DELETE';
+COMMENT ON COLUMN traceability_manager."traceability_wa"."wa_number" IS 'Mã Lệnh Sản Xuất duy nhất (Cú pháp chuẩn WA/xxxx/xxxxx, ví dụ: WA/2026/00412)';
+COMMENT ON COLUMN traceability_manager."traceability_wa"."item_code" IS 'Mã chủng loại thành phẩm (ví dụ: WSLRW-C-RS485-01)';
+COMMENT ON COLUMN traceability_manager."traceability_wa"."planned_quantity" IS 'Số lượng dự kiến sản xuất của lệnh';
+COMMENT ON COLUMN traceability_manager."traceability_wa"."notes" IS 'Ghi chú kỹ thuật của lệnh sản xuất';
+
+-- Trigger for updated_at on traceability_wa
+DROP TRIGGER IF EXISTS trg_traceability_wa_updated_at ON traceability_manager."traceability_wa";
+CREATE TRIGGER trg_traceability_wa_updated_at
+BEFORE UPDATE ON traceability_manager."traceability_wa"
+FOR EACH ROW
+EXECUTE FUNCTION traceability_manager.set_current_timestamp_updated_at();
+
+-- 7. Device Units & Test Results Table (Tầng Thiết Bị & Kết Quả Đo Kiểm)
+CREATE TABLE IF NOT EXISTS traceability_manager."traceability_device" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "so_id" UUID NOT NULL REFERENCES traceability_manager."traceability_so"("id") ON DELETE CASCADE,
+  "wa_id" UUID REFERENCES traceability_manager."traceability_wa"("id") ON DELETE SET NULL,
+  "serial_number" VARCHAR(100) NOT NULL UNIQUE,
+  "device_key" VARCHAR(64),
+  "dev_eui" VARCHAR(64),
+  "item_code" VARCHAR(100),
+  "sku" VARCHAR(100),
+  "hw_version" VARCHAR(50),
+  "fw_version" VARCHAR(50),
+  "test_result" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  "test_id" VARCHAR(255),
+  "test_station" VARCHAR(100),
+  "test_person" VARCHAR(100),
+  "tested_at" TIMESTAMPTZ,
+  "test_raw_data" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "final_config_session_id" UUID,
+  "config_status" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  "status" VARCHAR(30) NOT NULL DEFAULT 'TESTED',
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+COMMENT ON TABLE traceability_manager."traceability_device" IS 'Quản lý từng thiết bị cá thể, liên kết SO/WA và dữ liệu kiểm thử phần cứng';
+COMMENT ON COLUMN traceability_manager."traceability_device"."id" IS 'Khóa chính UUID duy nhất';
+COMMENT ON COLUMN traceability_manager."traceability_device"."so_id" IS 'Tham chiếu tới traceability_so(id) (bắt buộc)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."wa_id" IS 'Tham chiếu tới traceability_wa(id) (có thể NULL nếu gán trực tiếp cho SO)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."serial_number" IS 'Số serial number phần cứng duy nhất (ví dụ: LRCR26000093)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."device_key" IS 'Device Key từ file CSV đo kiểm (thường là 16 ký tự hex)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."dev_eui" IS 'DevEUI viễn thông chuẩn hóa (16 ký tự hex)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."item_code" IS 'Mã vật tư/thành phẩm (ví dụ: WSLRW-C-RS485-01)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."sku" IS 'Mã SKU model (ví dụ: WSLRW-MB485)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."hw_version" IS 'Phiên bản phần cứng (ví dụ: 2H)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."fw_version" IS 'Phiên bản firmware (ví dụ: 5F0917)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."test_result" IS 'Kết quả kiểm tra phần cứng từ máy test (PASS, FAIL, PENDING). Điều kiện tiên quyết: chỉ PASS mới cho phép Final Config';
+COMMENT ON COLUMN traceability_manager."traceability_device"."test_id" IS 'Mã định danh lần test từ trạm đo';
+COMMENT ON COLUMN traceability_manager."traceability_device"."test_station" IS 'Tên trạm đo kiểm (ví dụ: STATION-EN-3)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."test_person" IS 'Kỹ thuật viên thực hiện đo kiểm (ví dụ: DO QUANG KHANH)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."tested_at" IS 'Thời điểm đo kiểm hoàn tất';
+COMMENT ON COLUMN traceability_manager."traceability_device"."test_raw_data" IS 'Dữ liệu thô JSONB lưu toàn bộ metrics bổ sung từ file CSV (start_time, duration_time, label_check_code, auto_check, calib, v.v.)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."final_config_session_id" IS 'Tham chiếu tới finalconfig_manager.finalconfig_execution_session(id)';
+COMMENT ON COLUMN traceability_manager."traceability_device"."config_status" IS 'Trạng thái nạp cấu hình: PENDING, CONFIGURED_PASS, CONFIGURED_FAIL';
+COMMENT ON COLUMN traceability_manager."traceability_device"."status" IS 'Vòng đời thiết bị: TESTED, TESTED_PASS, TESTED_FAIL, CONFIGURED, SHIPPED';
 
 -- Trigger for updated_at on traceability_device
 DROP TRIGGER IF EXISTS trg_traceability_device_updated_at ON traceability_manager."traceability_device";
@@ -128,65 +144,103 @@ DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.tables
-    WHERE table_schema = 'finalconfig_manager' AND table_name = 'finalconfig_execution_session'
+    WHERE table_schema = 'finalconfig_manager' 
+      AND table_name = 'finalconfig_execution_session'
   ) THEN
     IF NOT EXISTS (
       SELECT 1 FROM information_schema.table_constraints
       WHERE constraint_schema = 'traceability_manager'
-        AND table_name = 'traceability_device'
-        AND constraint_name = 'fk_traceability_device_finalconfig_session'
+        AND constraint_name = 'fk_traceability_device_final_config_session'
     ) THEN
       ALTER TABLE traceability_manager."traceability_device"
-        ADD CONSTRAINT "fk_traceability_device_finalconfig_session"
-        FOREIGN KEY ("final_config_session_id")
-        REFERENCES finalconfig_manager."finalconfig_execution_session"("id")
-        ON DELETE SET NULL;
+      ADD CONSTRAINT fk_traceability_device_final_config_session
+      FOREIGN KEY ("final_config_session_id")
+      REFERENCES finalconfig_manager."finalconfig_execution_session"("id")
+      ON DELETE SET NULL;
     END IF;
   END IF;
 END $$;
 
--- Indexes for traceability_device
-CREATE INDEX IF NOT EXISTS "idx_traceability_device_order_id" ON traceability_manager."traceability_device" ("order_id");
-CREATE INDEX IF NOT EXISTS "idx_traceability_device_serial_number" ON traceability_manager."traceability_device" ("serial_number");
-CREATE INDEX IF NOT EXISTS "idx_traceability_device_sku" ON traceability_manager."traceability_device" ("sku");
-CREATE INDEX IF NOT EXISTS "idx_traceability_device_dev_eui" ON traceability_manager."traceability_device" ("dev_eui") WHERE "dev_eui" IS NOT NULL;
-CREATE INDEX IF NOT EXISTS "idx_traceability_device_sigfox_id" ON traceability_manager."traceability_device" ("sigfox_id") WHERE "sigfox_id" IS NOT NULL;
-CREATE INDEX IF NOT EXISTS "idx_traceability_device_final_config_session_id" ON traceability_manager."traceability_device" ("final_config_session_id") WHERE "final_config_session_id" IS NOT NULL;
-CREATE INDEX IF NOT EXISTS "idx_traceability_device_config_status" ON traceability_manager."traceability_device" ("config_status");
-CREATE INDEX IF NOT EXISTS "idx_traceability_device_status" ON traceability_manager."traceability_device" ("status");
-CREATE INDEX IF NOT EXISTS "idx_traceability_device_created_at" ON traceability_manager."traceability_device" ("created_at");
+-- 8. High-Performance Indices
+CREATE INDEX IF NOT EXISTS idx_traceability_so_number
+  ON traceability_manager."traceability_so" ("so_number");
 
--- 7. Metabase Analytical BI View: v_device_traceability_lifecycle
--- Provides ready-to-query unified lifecycle data joining ERP orders, device credentials, and finalconfig sessions.
+CREATE INDEX IF NOT EXISTS idx_traceability_wa_so_id
+  ON traceability_manager."traceability_wa" ("so_id");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_wa_number
+  ON traceability_manager."traceability_wa" ("wa_number");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_wa_item_code
+  ON traceability_manager."traceability_wa" ("item_code");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_device_so_id
+  ON traceability_manager."traceability_device" ("so_id");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_device_wa_id
+  ON traceability_manager."traceability_device" ("wa_id");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_device_serial
+  ON traceability_manager."traceability_device" ("serial_number");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_device_device_key
+  ON traceability_manager."traceability_device" ("device_key");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_device_deveui
+  ON traceability_manager."traceability_device" ("dev_eui");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_device_test_result
+  ON traceability_manager."traceability_device" ("test_result");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_device_config_status
+  ON traceability_manager."traceability_device" ("config_status");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_device_status
+  ON traceability_manager."traceability_device" ("status");
+
+CREATE INDEX IF NOT EXISTS idx_traceability_device_tested_at
+  ON traceability_manager."traceability_device" ("tested_at" DESC);
+
+-- GIN Index on JSONB test_raw_data for deep search queries
+CREATE INDEX IF NOT EXISTS idx_traceability_device_raw_data_gin
+  ON traceability_manager."traceability_device" USING GIN ("test_raw_data");
+
+-- 9. Analytical BI View for Metabase: v_device_traceability_lifecycle
 CREATE OR REPLACE VIEW traceability_manager.v_device_traceability_lifecycle AS
 SELECT
-    d.id AS device_id,
-    d.serial_number,
-    o.so_number,
-    o.wa_number,
-    o.item_code,
-    o.connectivity,
-    d.sku,
-    d.fw_version,
-    d.hw_version,
-    d.me_version,
-    d.dev_eui,
-    d.app_eui,
-    d.sigfox_id,
-    d.config_status,
-    d.chirpstack_synced,
-    d.status AS device_status,
-    d.final_config_session_id,
-    fcs.status AS final_config_session_status,
-    fcs.serial_number AS final_config_device_sn,
-    fcs.passed_steps AS config_passed_steps,
-    fcs.failed_steps AS config_failed_steps,
-    fcs.total_steps AS config_total_steps,
-    fcs.completed_at AS configured_at,
-    d.created_at AS device_created_at,
-    o.created_at AS order_created_at
+  d.id AS device_id,
+  d.serial_number,
+  d.device_key,
+  d.dev_eui,
+  COALESCE(d.item_code, wa.item_code) AS item_code,
+  d.sku,
+  d.hw_version,
+  d.fw_version,
+  d.test_result,
+  d.test_id,
+  d.test_station,
+  d.test_person,
+  d.tested_at,
+  d.test_raw_data,
+  (d.test_result = 'PASS') AS is_eligible_for_final_config,
+  so.id AS so_id,
+  so.so_number,
+  so.customer_name,
+  wa.id AS wa_id,
+  wa.wa_number,
+  d.final_config_session_id,
+  d.config_status AS final_config_status,
+  fcs.operator_name AS final_config_operator,
+  fcs.target_firmware AS final_config_target_fw,
+  fcs.pass_count AS final_config_pass_count,
+  fcs.fail_count AS final_config_fail_count,
+  fcs.completed_at AS final_config_completed_at,
+  d.status AS overall_status,
+  d.created_at,
+  d.updated_at
 FROM traceability_manager.traceability_device d
-JOIN traceability_manager.traceability_order o ON d.order_id = o.id
+JOIN traceability_manager.traceability_so so ON d.so_id = so.id
+LEFT JOIN traceability_manager.traceability_wa wa ON d.wa_id = wa.id
 LEFT JOIN finalconfig_manager.finalconfig_execution_session fcs ON d.final_config_session_id = fcs.id;
 
-COMMENT ON VIEW traceability_manager.v_device_traceability_lifecycle IS 'Comprehensive analytical Metabase view linking ERP Orders, Device Credentials, and Final Config QA Execution metrics';
+COMMENT ON VIEW traceability_manager.v_device_traceability_lifecycle IS 'Metabase Analytical View: Aggregates full device lifecycle spanning Sale Order (SO), Work Authorization (WA), Hardware Test CSV Results, and Final Configuration Session.';

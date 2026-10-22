@@ -19,6 +19,10 @@ const requiredFiles = [
   'schemas/lorawan-chirpstack/schema.sql',
   'schemas/lorawan-chirpstack/migrations/001_create_network_servers_table.sql',
   'schemas/lorawan-chirpstack/migrations/002_grant_runtime_privileges.sql',
+  'schemas/traceability-manager/schema.sql',
+  'schemas/traceability-manager/migrations/001_create_traceability_manager_tables.sql',
+  'schemas/traceability-manager/migrations/002_grant_runtime_privileges.sql',
+  'schemas/traceability-manager/METABASE_DOCS.md',
   'scripts/migrate.js'
 ];
 
@@ -72,18 +76,25 @@ assert.ok(migrateSource.includes("'finalconfig-manager'"), 'Missing finalconfig-
 assert.ok(migrateSource.includes("'traceability-manager'"), 'Missing traceability-manager source in migrate.js');
 console.log('✓ scripts/migrate.js contains all plugin sources');
 
-// 6. Validate traceability_manager migration & view specifications
+// 6. Validate traceability_manager migration & view specifications (Data Contract v2)
 const traceMigration001 = fs.readFileSync(
   path.join(__dirname, 'schemas/traceability-manager/migrations/001_create_traceability_manager_tables.sql'),
   'utf8'
 );
 assert.ok(traceMigration001.includes('CREATE SCHEMA IF NOT EXISTS traceability_manager;'), 'Missing schema traceability_manager');
-assert.ok(traceMigration001.includes('CREATE TABLE IF NOT EXISTS traceability_manager."traceability_order"'), 'Missing traceability_order table');
+assert.ok(traceMigration001.includes('CREATE TABLE IF NOT EXISTS traceability_manager."traceability_so"'), 'Missing traceability_so table');
+assert.ok(traceMigration001.includes('CREATE TABLE IF NOT EXISTS traceability_manager."traceability_wa"'), 'Missing traceability_wa table');
 assert.ok(traceMigration001.includes('CREATE TABLE IF NOT EXISTS traceability_manager."traceability_device"'), 'Missing traceability_device table');
-assert.ok(traceMigration001.includes('uq_traceability_order_so_wa_item'), 'Missing unique constraint on so, wa, item_code');
+
+// Validate key columns and constraints
+assert.ok(traceMigration001.includes('"so_number" VARCHAR(50) NOT NULL UNIQUE'), 'Missing unique so_number');
+assert.ok(traceMigration001.includes('"wa_number" VARCHAR(50) NOT NULL UNIQUE'), 'Missing unique wa_number');
 assert.ok(traceMigration001.includes('"serial_number" VARCHAR(100) NOT NULL UNIQUE'), 'Missing unique serial_number');
+assert.ok(traceMigration001.includes('"test_result" VARCHAR(20) NOT NULL DEFAULT \'PENDING\''), 'Missing test_result column');
+assert.ok(traceMigration001.includes('"test_raw_data" JSONB NOT NULL DEFAULT \'{}\'::jsonb'), 'Missing test_raw_data column');
 assert.ok(traceMigration001.includes('v_device_traceability_lifecycle'), 'Missing Metabase lifecycle view');
-console.log('✓ 001_create_traceability_manager_tables.sql matches all contract specifications');
+assert.ok(traceMigration001.includes('(d.test_result = \'PASS\') AS is_eligible_for_final_config'), 'Missing is_eligible_for_final_config in view');
+console.log('✓ 001_create_traceability_manager_tables.sql matches all Data Contract v2 specifications');
 
 const traceMigration002 = fs.readFileSync(
   path.join(__dirname, 'schemas/traceability-manager/migrations/002_grant_runtime_privileges.sql'),
@@ -91,15 +102,21 @@ const traceMigration002 = fs.readFileSync(
 );
 assert.ok(traceMigration002.includes('GRANT USAGE ON SCHEMA traceability_manager TO itest_system_user;'), 'Missing system_user grant');
 assert.ok(traceMigration002.includes('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA traceability_manager TO itest_system_user;'), 'Missing system_user table grant');
-console.log('✓ 002_grant_runtime_privileges.sql grants proper runtime privileges');
+assert.ok(traceMigration002.includes('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE traceability_manager."traceability_so" TO itest_system_user;'), 'Missing traceability_so explicit grant');
+assert.ok(traceMigration002.includes('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE traceability_manager."traceability_wa" TO itest_system_user;'), 'Missing traceability_wa explicit grant');
+assert.ok(traceMigration002.includes('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE traceability_manager."traceability_device" TO itest_system_user;'), 'Missing traceability_device explicit grant');
+assert.ok(traceMigration002.includes('GRANT SELECT ON TABLE traceability_manager."v_device_traceability_lifecycle" TO itest_system_user;'), 'Missing view explicit grant');
+console.log('✓ 002_grant_runtime_privileges.sql grants proper runtime privileges on all v2 objects');
 
 const metabaseDocs = fs.readFileSync(
   path.join(__dirname, 'schemas/traceability-manager/METABASE_DOCS.md'),
   'utf8'
 );
-assert.ok(metabaseDocs.includes('traceability_order'), 'Missing traceability_order in docs');
+assert.ok(metabaseDocs.includes('traceability_so'), 'Missing traceability_so in docs');
+assert.ok(metabaseDocs.includes('traceability_wa'), 'Missing traceability_wa in docs');
 assert.ok(metabaseDocs.includes('traceability_device'), 'Missing traceability_device in docs');
 assert.ok(metabaseDocs.includes('v_device_traceability_lifecycle'), 'Missing view in docs');
-console.log('✓ METABASE_DOCS.md contains comprehensive data dictionary & BI query recipes');
+assert.ok(metabaseDocs.includes('is_eligible_for_final_config'), 'Missing is_eligible_for_final_config in docs');
+console.log('✓ METABASE_DOCS.md contains comprehensive data dictionary & BI query recipes for v2');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
