@@ -56,6 +56,11 @@ const SOURCES = {
     name: 'MemMap Manager Plugin',
     dir: path.join(SCHEMAS_DIR, 'memmap-manager/migrations'),
     schema: 'memmap_manager'
+  },
+  'finalconfig-manager': {
+    name: 'Final Config Manager Plugin',
+    dir: path.join(SCHEMAS_DIR, 'finalconfig-manager/migrations'),
+    schema: 'finalconfig_manager'
   }
 };
 
