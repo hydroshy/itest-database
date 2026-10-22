@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- ITEST-SYSTEM - CORE MICRO-KERNEL SCHEMA (POSTGRESQL 17)
 -- ==============================================================================
 -- File: schemas/system/schema.sql
@@ -59,31 +59,35 @@ CREATE TABLE IF NOT EXISTS system_schema."user_role" (
 
 -- 6. Core Dynamic Plugin Registry
 CREATE TABLE IF NOT EXISTS system_schema."core_plugins" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "plugin_id" VARCHAR(100) UNIQUE NOT NULL,
+  "id" VARCHAR(128) PRIMARY KEY,
   "name" VARCHAR(255) NOT NULL,
-  "version" VARCHAR(50) NOT NULL,
+  "version" VARCHAR(64) NOT NULL,
+  "type" VARCHAR(64) NOT NULL DEFAULT 'SYSTEM',
+  "schemaName" VARCHAR(128) NOT NULL DEFAULT 'public',
+  "status" VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
   "description" TEXT,
-  "author" VARCHAR(255),
-  "license" VARCHAR(100),
-  "category" VARCHAR(100) NOT NULL,
-  "enabled" BOOLEAN NOT NULL DEFAULT false,
-  "status" VARCHAR(50) NOT NULL DEFAULT 'installed',
-  "entry_point" VARCHAR(255) NOT NULL,
-  "config" JSONB DEFAULT '{}',
-  "dependencies" JSONB DEFAULT '{}',
-  "installed_at" TIMESTAMP NOT NULL DEFAULT now(),
-  "updated_at" TIMESTAMP NOT NULL DEFAULT now()
+  "author" VARCHAR(128),
+  "license" VARCHAR(64),
+  "repositoryUrl" VARCHAR(512),
+  "bundleUrl" VARCHAR(512),
+  "bundleType" VARCHAR(32) DEFAULT 'ESM',
+  "manifest" JSONB DEFAULT '{}',
+  "uiEntry" JSONB,
+  "backendEntry" JSONB,
+  "permissions" JSONB DEFAULT '[]',
+  "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
+  "updatedAt" TIMESTAMP NOT NULL DEFAULT now()
 );
 
 -- 7. Plugin Security and Operation Audit Logs
 CREATE TABLE IF NOT EXISTS system_schema."plugin_audit_logs" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "plugin_id" VARCHAR(100) NOT NULL,
-  "action" VARCHAR(100) NOT NULL,
-  "actor" VARCHAR(255) NOT NULL,
+  "pluginId" VARCHAR(128) NOT NULL,
+  "version" VARCHAR(64) NOT NULL DEFAULT '1.0.0',
+  "action" VARCHAR(32) NOT NULL,
+  "operator" VARCHAR(128) NOT NULL DEFAULT 'system',
   "details" JSONB DEFAULT '{}',
-  "created_at" TIMESTAMP NOT NULL DEFAULT now()
+  "createdAt" TIMESTAMP NOT NULL DEFAULT now()
 );
 
 -- 8. Unified Core Device Registry
@@ -103,10 +107,10 @@ CREATE TABLE IF NOT EXISTS system_schema."unified_devices" (
 CREATE INDEX IF NOT EXISTS "idx_users_username" ON system_schema."users"("username");
 CREATE INDEX IF NOT EXISTS "idx_roles_code" ON system_schema."roles"("code");
 CREATE INDEX IF NOT EXISTS "idx_permission_name" ON system_schema."permission"("name");
-CREATE INDEX IF NOT EXISTS "idx_core_plugins_id" ON system_schema."core_plugins"("plugin_id");
+CREATE INDEX IF NOT EXISTS "idx_core_plugins_type" ON system_schema."core_plugins"("type");
 CREATE INDEX IF NOT EXISTS "idx_core_plugins_status" ON system_schema."core_plugins"("status");
-CREATE INDEX IF NOT EXISTS "idx_plugin_audit_plugin_id" ON system_schema."plugin_audit_logs"("plugin_id");
-CREATE INDEX IF NOT EXISTS "idx_plugin_audit_created_at" ON system_schema."plugin_audit_logs"("created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_plugin_audit_plugin_id" ON system_schema."plugin_audit_logs"("pluginId");
+CREATE INDEX IF NOT EXISTS "idx_plugin_audit_action" ON system_schema."plugin_audit_logs"("action");
 CREATE INDEX IF NOT EXISTS "idx_unified_devices_device_id" ON system_schema."unified_devices"("device_id");
 CREATE INDEX IF NOT EXISTS "idx_unified_devices_protocol" ON system_schema."unified_devices"("protocol");
 

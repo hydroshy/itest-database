@@ -34,7 +34,7 @@ const SOURCES = {
   },
   'system': {
     name: 'itest-system (Core Backbone)',
-    dir: path.join(SCHEMAS_DIR, 'system'),
+    dir: path.join(SCHEMAS_DIR, 'system/migrations'),
     schema: 'system_schema'
   },
   'plugins': {
