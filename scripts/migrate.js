@@ -61,6 +61,11 @@ const SOURCES = {
     name: 'Final Config Manager Plugin',
     dir: path.join(SCHEMAS_DIR, 'finalconfig-manager/migrations'),
     schema: 'finalconfig_manager'
+  },
+  'traceability-manager': {
+    name: 'Traceability Manager Plugin',
+    dir: path.join(SCHEMAS_DIR, 'traceability-manager/migrations'),
+    schema: 'traceability_manager'
   }
 };
 

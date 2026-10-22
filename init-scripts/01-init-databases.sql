@@ -16,6 +16,8 @@ CREATE SCHEMA IF NOT EXISTS plugins_schema;
 CREATE SCHEMA IF NOT EXISTS ops_schema;
 CREATE SCHEMA IF NOT EXISTS lorawan_chirpstack;
 CREATE SCHEMA IF NOT EXISTS memmap_manager;
+CREATE SCHEMA IF NOT EXISTS finalconfig_manager;
+CREATE SCHEMA IF NOT EXISTS traceability_manager;
 
 -- 3. Create Dedicated Service Roles / Users
 DO $$
@@ -93,6 +95,42 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA memmap_manager TO itest_system_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA memmap_manager GRANT ALL ON TABLES TO itest_system_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA memmap_manager GRANT ALL ON SEQUENCES TO itest_system_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA memmap_manager GRANT ALL ON FUNCTIONS TO itest_system_user;
+
+-- FINALCONFIG MANAGER SCHEMA: Management of final config profiles and execution sessions
+GRANT USAGE, CREATE ON SCHEMA finalconfig_manager TO itest_plugins_user;
+GRANT ALL ON ALL TABLES IN SCHEMA finalconfig_manager TO itest_plugins_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA finalconfig_manager TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA finalconfig_manager GRANT ALL ON TABLES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA finalconfig_manager GRANT ALL ON SEQUENCES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA finalconfig_manager GRANT ALL ON FUNCTIONS TO itest_plugins_user;
+
+GRANT USAGE, CREATE ON SCHEMA finalconfig_manager TO itest_system_user;
+GRANT ALL ON ALL TABLES IN SCHEMA finalconfig_manager TO itest_system_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA finalconfig_manager TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA finalconfig_manager GRANT ALL ON TABLES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA finalconfig_manager GRANT ALL ON SEQUENCES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA finalconfig_manager GRANT ALL ON FUNCTIONS TO itest_system_user;
+
+GRANT USAGE ON SCHEMA finalconfig_manager TO itest_ops_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA finalconfig_manager GRANT SELECT ON TABLES TO itest_ops_user;
+
+-- TRACEABILITY MANAGER SCHEMA: Management of work orders, device serialization and lifecycle
+GRANT USAGE, CREATE ON SCHEMA traceability_manager TO itest_plugins_user;
+GRANT ALL ON ALL TABLES IN SCHEMA traceability_manager TO itest_plugins_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA traceability_manager TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA traceability_manager GRANT ALL ON TABLES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA traceability_manager GRANT ALL ON SEQUENCES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA traceability_manager GRANT ALL ON FUNCTIONS TO itest_plugins_user;
+
+GRANT USAGE, CREATE ON SCHEMA traceability_manager TO itest_system_user;
+GRANT ALL ON ALL TABLES IN SCHEMA traceability_manager TO itest_system_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA traceability_manager TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA traceability_manager GRANT ALL ON TABLES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA traceability_manager GRANT ALL ON SEQUENCES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA traceability_manager GRANT ALL ON FUNCTIONS TO itest_system_user;
+
+GRANT USAGE ON SCHEMA traceability_manager TO itest_ops_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA traceability_manager GRANT SELECT ON TABLES TO itest_ops_user;
 
 GRANT USAGE ON SCHEMA lorawan_chirpstack TO itest_ops_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA lorawan_chirpstack GRANT SELECT ON TABLES TO itest_ops_user;

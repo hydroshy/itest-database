@@ -10,3 +10,6 @@
 \i /opt/schemas/plugins/schema.sql
 \i /opt/schemas/ops-agent/schema.sql
 \i /opt/schemas/lorawan-chirpstack/schema.sql
+\i /opt/schemas/memmap-manager/schema.sql
+\i /opt/schemas/finalconfig-manager/schema.sql
+\i /opt/schemas/traceability-manager/schema.sql
