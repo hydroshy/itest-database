@@ -51,6 +51,11 @@ const SOURCES = {
     name: 'LoRaWAN ChirpStack Plugin',
     dir: path.join(SCHEMAS_DIR, 'lorawan-chirpstack/migrations'),
     schema: 'lorawan_chirpstack'
+  },
+  'memmap-manager': {
+    name: 'MemMap Manager Plugin',
+    dir: path.join(SCHEMAS_DIR, 'memmap-manager/migrations'),
+    schema: 'memmap_manager'
   }
 };
 
@@ -166,7 +171,7 @@ async function showStatus(client) {
 
   // Schema Table Counts
   console.log(`\n-- Schemas & Tables Overview --`);
-  const schemas = ['system_schema', 'plugins_schema', 'ops_schema'];
+  const schemas = ['system_schema', 'plugins_schema', 'ops_schema', 'lorawan_chirpstack', 'memmap_manager'];
   for (const s of schemas) {
     const res = await client.query(`
       SELECT table_name 
@@ -202,7 +207,7 @@ async function main() {
 
     if (!targetSource || targetSource === 'all') {
       // Run init first if pending, then schemas
-      for (const key of ['init', 'system', 'plugins', 'lorawan-chirpstack', 'ops-agent']) {
+      for (const key of ['init', 'system', 'plugins', 'lorawan-chirpstack', 'memmap-manager', 'ops-agent']) {
         await migrateSource(client, key);
       }
     } else if (SOURCES[targetSource]) {
