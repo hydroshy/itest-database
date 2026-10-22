@@ -7,3 +7,4 @@
 
 \i /opt/schemas/memmap-manager/migrations/001_create_memmap_manager_tables.sql
 \i /opt/schemas/memmap-manager/migrations/002_grant_runtime_privileges.sql
+\i /opt/schemas/memmap-manager/migrations/003_extend_memmap_registers_metadata.sql
