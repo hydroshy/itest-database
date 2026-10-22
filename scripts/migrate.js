@@ -19,8 +19,8 @@ const DB_CONFIG = {
   host: process.env.POSTGRES_HOST || '127.0.0.1',
   port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
   database: process.env.POSTGRES_DB || 'itest_platform',
-  user: process.env.POSTGRES_USER || 'itest_admin',
-  password: process.env.POSTGRES_PASSWORD || 'itest_secure_password_2026',
+  user: process.env.POSTGRES_USER || process.env.POSTGRES_SUPERUSER || 'postgres',
+  password: process.env.POSTGRES_PASSWORD || process.env.POSTGRES_SUPERPASS || 'itest_secure_password_2026',
 };
 
 const SCHEMAS_DIR = path.join(__dirname, '../schemas');
@@ -202,7 +202,7 @@ async function main() {
 
     if (!targetSource || targetSource === 'all') {
       // Run init first if pending, then schemas
-      for (const key of ['init', 'system', 'plugins', 'ops-agent']) {
+      for (const key of ['init', 'system', 'plugins', 'lorawan-chirpstack', 'ops-agent']) {
         await migrateSource(client, key);
       }
     } else if (SOURCES[targetSource]) {

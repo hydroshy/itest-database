@@ -18,6 +18,7 @@ const requiredFiles = [
   'schemas/ops-agent/schema.sql',
   'schemas/lorawan-chirpstack/schema.sql',
   'schemas/lorawan-chirpstack/migrations/001_create_network_servers_table.sql',
+  'schemas/lorawan-chirpstack/migrations/002_grant_runtime_privileges.sql',
   'scripts/migrate.js'
 ];
 
@@ -33,6 +34,16 @@ assert.ok(initSql.includes('CREATE SCHEMA IF NOT EXISTS lorawan_chirpstack;'), '
 assert.ok(initSql.includes('GRANT USAGE, CREATE ON SCHEMA lorawan_chirpstack TO itest_plugins_user;'), 'Missing grant for itest_plugins_user');
 assert.ok(initSql.includes('GRANT USAGE, CREATE ON SCHEMA lorawan_chirpstack TO itest_system_user;'), 'Missing grant for itest_system_user');
 console.log('✓ 01-init-databases.sql contains correct schema and grants');
+
+// 2b. Verify the idempotent runtime-grant migration protects existing volumes.
+const runtimeGrantSql = fs.readFileSync(
+  path.join(__dirname, 'schemas/lorawan-chirpstack/migrations/002_grant_runtime_privileges.sql'),
+  'utf8'
+);
+assert.ok(runtimeGrantSql.includes('GRANT USAGE ON SCHEMA lorawan_chirpstack TO itest_system_user;'), 'Missing runtime schema usage grant');
+assert.ok(runtimeGrantSql.includes('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA lorawan_chirpstack TO itest_system_user;'), 'Missing runtime table grant');
+assert.ok(runtimeGrantSql.includes('GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA lorawan_chirpstack TO itest_system_user;'), 'Missing runtime sequence grant');
+console.log('✓ Runtime grant migration repairs existing PostgreSQL volumes');
 
 // 3. Validate 02-init-tables.sql includes lorawan-chirpstack schema.sql
 const initTablesSql = fs.readFileSync(path.join(__dirname, 'init-scripts/02-init-tables.sql'), 'utf8');
