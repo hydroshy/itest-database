@@ -295,11 +295,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Backward compatibility alias
+CREATE OR REPLACE FUNCTION system_schema.sync_role_menu_permissions()
+RETURNS TRIGGER AS $$
+BEGIN
+  RETURN system_schema.sync_role_menu_permissions_columns();
+END;
+$$ LANGUAGE plpgsql;
+
 DROP TRIGGER IF EXISTS trg_sync_role_menu_permissions ON system_schema."role_menu_permissions";
 CREATE TRIGGER trg_sync_role_menu_permissions
 BEFORE INSERT OR UPDATE ON system_schema."role_menu_permissions"
 FOR EACH ROW
-EXECUTE FUNCTION system_schema.sync_role_menu_permissions();
+EXECUTE FUNCTION system_schema.sync_role_menu_permissions_columns();
 
 CREATE INDEX IF NOT EXISTS "idx_role_menu_role_id" ON system_schema."role_menu_permissions"("roleId");
 CREATE INDEX IF NOT EXISTS "idx_role_menu_role_code" ON system_schema."role_menu_permissions"("roleCode");
