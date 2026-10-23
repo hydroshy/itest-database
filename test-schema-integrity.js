@@ -23,6 +23,7 @@ const requiredFiles = [
   'schemas/traceability-manager/migrations/001_create_traceability_manager_tables.sql',
   'schemas/traceability-manager/migrations/002_grant_runtime_privileges.sql',
   'schemas/traceability-manager/METABASE_DOCS.md',
+  'schemas/system/migrations/003_create_menu_items_and_role_permissions.sql',
   'scripts/migrate.js'
 ];
 
@@ -118,5 +119,25 @@ assert.ok(metabaseDocs.includes('traceability_device'), 'Missing traceability_de
 assert.ok(metabaseDocs.includes('v_device_traceability_lifecycle'), 'Missing view in docs');
 assert.ok(metabaseDocs.includes('is_eligible_for_final_config'), 'Missing is_eligible_for_final_config in docs');
 console.log('✓ METABASE_DOCS.md contains comprehensive data dictionary & BI query recipes for v2');
+
+const menuMigration003 = fs.readFileSync(
+  path.join(__dirname, 'schemas/system/migrations/003_create_menu_items_and_role_permissions.sql'),
+  'utf8'
+);
+assert.ok(menuMigration003.includes('CREATE TABLE IF NOT EXISTS system_schema."menu_items"'), 'Missing menu_items table');
+assert.ok(menuMigration003.includes('CREATE TABLE IF NOT EXISTS system_schema."role_menu_permissions"'), 'Missing role_menu_permissions table');
+assert.ok(menuMigration003.includes('dashboard'), 'Missing dashboard seed');
+assert.ok(menuMigration003.includes('final-config:tool'), 'Missing final-config:tool seed');
+assert.ok(menuMigration003.includes('final-config:manager'), 'Missing final-config:manager seed');
+assert.ok(menuMigration003.includes('final-config:create'), 'Missing final-config:create seed');
+assert.ok(menuMigration003.includes('device-traceability:so'), 'Missing device-traceability:so seed');
+assert.ok(menuMigration003.includes('device-traceability:devices'), 'Missing device-traceability:devices seed');
+assert.ok(menuMigration003.includes('device-traceability:config'), 'Missing device-traceability:config seed');
+assert.ok(menuMigration003.includes('memmap-payload:manager'), 'Missing memmap-payload:manager seed');
+assert.ok(menuMigration003.includes('lorawan-chirpstack:integration'), 'Missing lorawan-chirpstack:integration seed');
+assert.ok(menuMigration003.includes('SUPER_ADMIN') && menuMigration003.includes('END_USER'), 'Missing role seeds');
+assert.ok(menuMigration003.includes('GRANT ALL PRIVILEGES ON TABLE system_schema."menu_items" TO itest_system_user;'), 'Missing runtime grant menu_items');
+assert.ok(menuMigration003.includes('GRANT ALL PRIVILEGES ON TABLE system_schema."role_menu_permissions" TO itest_system_user;'), 'Missing runtime grant role_menu_permissions');
+console.log('✓ 003_create_menu_items_and_role_permissions.sql matches all Menu & Role Permission specs');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
