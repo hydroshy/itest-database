@@ -60,9 +60,9 @@ Module Traceability được thiết kế trong schema riêng biệt `traceabili
 | finalconfig_manager.finalconfig_execution_session |
 |---------------------------------------------------|
 | * id (UUID PK)                                    |
-| * operator_name, target_firmware                  |
-| * pass_count, fail_count                          |
-| * completed_at (TIMESTAMPTZ)                      |
+| * status (IN_PROGRESS, COMPLETED, FAILED, ...)     |
+| * current_step, total_steps, passed_steps          |
+| * started_at, completed_at, error_message         |
 +---------------------------------------------------+
 ```
 
@@ -139,7 +139,7 @@ SELECT * FROM traceability_manager.v_device_traceability_lifecycle LIMIT 10;
 - `is_eligible_for_final_config`: `BOOLEAN` (`test_result = 'PASS'`) - Điều kiện cho phép nạp Final Config.
 - `so_id`, `so_number`, `customer_name`: Thông tin đơn hàng.
 - `wa_id`, `wa_number`: Thông tin lệnh sản xuất.
-- `final_config_session_id`, `final_config_status`, `final_config_operator`, `final_config_target_fw`: Kết quả Final Config.
+- `final_config_session_id`, `final_config_status`, `final_config_session_status`, `final_config_passed_steps`: Kết quả Final Config.
 - `overall_status`: Trạng thái tổng quát.
 
 ---
