@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS traceability_manager."traceability_so" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "so_number" VARCHAR(50) NOT NULL UNIQUE,
   "customer_name" VARCHAR(255),
+  "partner_email" VARCHAR(255),
+  "customer_email" VARCHAR(255),
   "notes" TEXT,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -170,6 +172,7 @@ SELECT
   so.id AS so_id,
   so.so_number,
   so.customer_name,
+  so.partner_email,
   wa.id AS wa_id,
   wa.wa_number,
   d.final_config_session_id,
@@ -199,6 +202,7 @@ SELECT
   so.id AS so_id,
   so.so_number,
   so.customer_name,
+  so.partner_email,
   COALESCE(d.item_code, 'UNKNOWN') AS item_code,
   COUNT(d.id) AS total_tested_serials,
   COUNT(d.id) FILTER (WHERE d.test_result = 'PASS') AS passed_serials,
@@ -207,6 +211,6 @@ SELECT
   MAX(d.tested_at) AS last_tested_at
 FROM traceability_manager."traceability_so" so
 JOIN traceability_manager."traceability_device" d ON d.so_id = so.id
-GROUP BY so.id, so.so_number, so.customer_name, COALESCE(d.item_code, 'UNKNOWN');
+GROUP BY so.id, so.so_number, so.customer_name, so.partner_email, COALESCE(d.item_code, 'UNKNOWN');
 
 COMMENT ON VIEW traceability_manager.v_so_item_summary IS 'Analytical View for Tree Structure: Aggregates serial count and test results grouped by SO and Item Code.';
