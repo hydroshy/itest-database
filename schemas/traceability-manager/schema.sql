@@ -214,9 +214,9 @@ device_summary AS (
     d.so_id,
     COALESCE(NULLIF(TRIM(d.item_code), ''), 'UNKNOWN') AS item_code,
     COUNT(d.id) AS total_tested_serials,
-    COUNT(d.id) FILTER (WHERE d.test_result = 'PASS' OR d.test_status = 'PASS') AS passed_serials,
-    COUNT(d.id) FILTER (WHERE d.test_result = 'FAIL' OR d.test_status = 'FAIL') AS failed_serials,
-    COUNT(d.id) FILTER (WHERE d.test_result = 'PENDING' OR d.test_status = 'PENDING') AS pending_serials,
+    COUNT(d.id) FILTER (WHERE d.test_result = 'PASS') AS passed_serials,
+    COUNT(d.id) FILTER (WHERE d.test_result = 'FAIL') AS failed_serials,
+    COUNT(d.id) FILTER (WHERE d.test_result = 'PENDING') AS pending_serials,
     MIN(d.tested_at) AS first_tested_at,
     MAX(d.tested_at) AS last_tested_at
   FROM traceability_manager."traceability_device" d
