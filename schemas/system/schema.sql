@@ -368,3 +368,17 @@ CROSS JOIN system_schema."menu_items" m
 WHERE r."code" IN ('END_USER', 'user')
   AND m."id" IN ('final-config:tool')
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
+
+-- 6. Compatibility Views for cross-schema access (public <-> system_schema)
+CREATE OR REPLACE VIEW system_schema."system_menu_items" AS
+SELECT * FROM system_schema."menu_items";
+
+CREATE OR REPLACE VIEW public."system_menu_items" AS
+SELECT * FROM system_schema."menu_items";
+
+CREATE OR REPLACE VIEW public."menu_items" AS
+SELECT * FROM system_schema."menu_items";
+
+CREATE OR REPLACE VIEW public."role_menu_permissions" AS
+SELECT * FROM system_schema."role_menu_permissions";
+

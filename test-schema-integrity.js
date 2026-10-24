@@ -24,6 +24,7 @@ const requiredFiles = [
   'schemas/traceability-manager/migrations/002_grant_runtime_privileges.sql',
   'schemas/traceability-manager/METABASE_DOCS.md',
   'schemas/system/migrations/003_create_menu_items_and_role_permissions.sql',
+  'schemas/system/migrations/004_create_system_menu_compat_views.sql',
   'scripts/migrate.js'
 ];
 
@@ -139,5 +140,17 @@ assert.ok(menuMigration003.includes('SUPER_ADMIN') && menuMigration003.includes(
 assert.ok(menuMigration003.includes('GRANT ALL PRIVILEGES ON TABLE system_schema."menu_items" TO itest_system_user;'), 'Missing runtime grant menu_items');
 assert.ok(menuMigration003.includes('GRANT ALL PRIVILEGES ON TABLE system_schema."role_menu_permissions" TO itest_system_user;'), 'Missing runtime grant role_menu_permissions');
 console.log('✓ 003_create_menu_items_and_role_permissions.sql matches all Menu & Role Permission specs');
+
+// 6b. Verify migration 004 provides public and system_schema compatibility views for MenuService
+const menuMigration004 = fs.readFileSync(
+  path.join(__dirname, 'schemas/system/migrations/004_create_system_menu_compat_views.sql'),
+  'utf8'
+);
+assert.ok(menuMigration004.includes('CREATE OR REPLACE VIEW public."system_menu_items"'), 'Missing public.system_menu_items view');
+assert.ok(menuMigration004.includes('CREATE OR REPLACE VIEW public."role_menu_permissions"'), 'Missing public.role_menu_permissions view');
+assert.ok(menuMigration004.includes('CREATE OR REPLACE VIEW system_schema."system_menu_items"'), 'Missing system_schema.system_menu_items view');
+assert.ok(menuMigration004.includes('GRANT ALL PRIVILEGES ON TABLE public."system_menu_items" TO itest_system_user;'), 'Missing grant on public.system_menu_items');
+assert.ok(menuMigration004.includes('ALTER ROLE itest_system_user SET search_path'), 'Missing search_path update for itest_system_user');
+console.log('✓ 004_create_system_menu_compat_views.sql matches all Menu compatibility view specs');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
