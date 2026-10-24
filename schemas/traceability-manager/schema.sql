@@ -144,6 +144,8 @@ CREATE INDEX IF NOT EXISTS idx_traceability_device_deveui ON traceability_manage
 CREATE INDEX IF NOT EXISTS idx_traceability_device_test_result ON traceability_manager."traceability_device" ("test_result");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_config_status ON traceability_manager."traceability_device" ("config_status");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_status ON traceability_manager."traceability_device" ("status");
+CREATE INDEX IF NOT EXISTS idx_traceability_device_item_code ON traceability_manager."traceability_device" ("item_code");
+CREATE INDEX IF NOT EXISTS idx_traceability_device_so_item ON traceability_manager."traceability_device" ("so_id", "item_code");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_tested_at ON traceability_manager."traceability_device" ("tested_at" DESC);
 CREATE INDEX IF NOT EXISTS idx_traceability_device_raw_data_gin ON traceability_manager."traceability_device" USING GIN ("test_raw_data");
 
@@ -190,3 +192,21 @@ LEFT JOIN traceability_manager.traceability_wa wa ON d.wa_id = wa.id
 LEFT JOIN finalconfig_manager.finalconfig_execution_session fcs ON d.final_config_session_id = fcs.id;
 
 COMMENT ON VIEW traceability_manager.v_device_traceability_lifecycle IS 'Metabase Analytical View: Aggregates full device lifecycle spanning Sale Order (SO), Work Authorization (WA), Hardware Test CSV Results, and Final Configuration Session.';
+
+-- Analytical View for Tree: v_so_item_summary (SO -> ITEM-CODE -> SERIALS)
+CREATE OR REPLACE VIEW traceability_manager.v_so_item_summary AS
+SELECT
+  so.id AS so_id,
+  so.so_number,
+  so.customer_name,
+  COALESCE(d.item_code, 'UNKNOWN') AS item_code,
+  COUNT(d.id) AS total_tested_serials,
+  COUNT(d.id) FILTER (WHERE d.test_result = 'PASS') AS passed_serials,
+  COUNT(d.id) FILTER (WHERE d.test_result = 'FAIL') AS failed_serials,
+  MIN(d.tested_at) AS first_tested_at,
+  MAX(d.tested_at) AS last_tested_at
+FROM traceability_manager."traceability_so" so
+JOIN traceability_manager."traceability_device" d ON d.so_id = so.id
+GROUP BY so.id, so.so_number, so.customer_name, COALESCE(d.item_code, 'UNKNOWN');
+
+COMMENT ON VIEW traceability_manager.v_so_item_summary IS 'Analytical View for Tree Structure: Aggregates serial count and test results grouped by SO and Item Code.';
