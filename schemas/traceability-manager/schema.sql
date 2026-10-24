@@ -152,6 +152,7 @@ CREATE INDEX IF NOT EXISTS idx_traceability_device_tested_at ON traceability_man
 CREATE INDEX IF NOT EXISTS idx_traceability_device_raw_data_gin ON traceability_manager."traceability_device" USING GIN ("test_raw_data");
 
 -- Metabase View: v_device_traceability_lifecycle
+DROP VIEW IF EXISTS traceability_manager.v_device_traceability_lifecycle CASCADE;
 CREATE OR REPLACE VIEW traceability_manager.v_device_traceability_lifecycle AS
 SELECT
   d.id AS device_id,
@@ -197,6 +198,7 @@ LEFT JOIN finalconfig_manager.finalconfig_execution_session fcs ON d.final_confi
 COMMENT ON VIEW traceability_manager.v_device_traceability_lifecycle IS 'Metabase Analytical View: Aggregates full device lifecycle spanning Sale Order (SO), Work Authorization (WA), Hardware Test CSV Results, and Final Configuration Session.';
 
 -- Analytical View for Tree: v_so_item_summary (SO -> ITEM-CODE -> SERIALS)
+DROP VIEW IF EXISTS traceability_manager.v_so_item_summary CASCADE;
 CREATE OR REPLACE VIEW traceability_manager.v_so_item_summary AS
 SELECT
   so.id AS so_id,
