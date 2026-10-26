@@ -39,7 +39,7 @@ const SOURCES = {
   },
   'plugins': {
     name: 'itest-plugins (IoT Plugins)',
-    dir: path.join(SCHEMAS_DIR, 'plugins'),
+    dir: path.join(SCHEMAS_DIR, 'plugins/migrations'),
     schema: 'plugins_schema'
   },
   'ops-agent': {

@@ -30,6 +30,7 @@ const requiredFiles = [
   'schemas/system/migrations/004_create_system_menu_compat_views.sql',
   'schemas/system/migrations/005_create_testing_devices_and_packets_tables.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
+  'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'scripts/migrate.js'
 ];
 
@@ -44,6 +45,7 @@ const initSql = fs.readFileSync(path.join(__dirname, 'init-scripts/01-init-datab
 assert.ok(initSql.includes('CREATE SCHEMA IF NOT EXISTS lorawan_chirpstack;'), 'Missing CREATE SCHEMA lorawan_chirpstack in 01-init-databases.sql');
 assert.ok(initSql.includes('GRANT USAGE, CREATE ON SCHEMA lorawan_chirpstack TO itest_plugins_user;'), 'Missing grant for itest_plugins_user');
 assert.ok(initSql.includes('GRANT USAGE, CREATE ON SCHEMA lorawan_chirpstack TO itest_system_user;'), 'Missing grant for itest_system_user');
+assert.ok(initSql.includes('GRANT USAGE, CREATE ON SCHEMA plugins_schema TO itest_system_user;'), 'Missing grant on plugins_schema for itest_system_user');
 console.log('✓ 01-init-databases.sql contains correct schema and grants');
 
 // 2b. Verify the idempotent runtime-grant migration protects existing volumes.
@@ -187,5 +189,31 @@ assert.ok(lorawanMig003.includes('"gateway_id" VARCHAR(64) NOT NULL'), 'Missing 
 assert.ok(lorawanMig003.includes('"status" VARCHAR(50) NOT NULL DEFAULT \'IN_PROGRESS\''), 'Missing status column');
 assert.ok(lorawanMig003.includes('"summary" JSONB NOT NULL DEFAULT \'{}\'::jsonb'), 'Missing summary JSONB column');
 console.log('✓ 003_create_gateway_test_sessions.sql matches Gateway test flow specifications');
+
+// 10. Validate plugins decoder migration 001 (decoder_scripts & v_memmap_decoders)
+const decoderMig001 = fs.readFileSync(
+  path.join(__dirname, 'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql'),
+  'utf8'
+);
+assert.ok(decoderMig001.includes('CREATE TABLE IF NOT EXISTS plugins_schema."decoder_scripts"'), 'Missing decoder_scripts table');
+assert.ok(decoderMig001.includes('"sku" VARCHAR(100) NOT NULL'), 'Missing sku in decoder_scripts');
+assert.ok(decoderMig001.includes('"long_fw" VARCHAR(100) NOT NULL'), 'Missing long_fw in decoder_scripts');
+assert.ok(decoderMig001.includes('"protocol" VARCHAR(50) NOT NULL DEFAULT \'lorawan\''), 'Missing protocol in decoder_scripts');
+assert.ok(decoderMig001.includes('"script" TEXT NOT NULL'), 'Missing script in decoder_scripts');
+assert.ok(decoderMig001.includes('"input_format" VARCHAR(50) NOT NULL DEFAULT \'hex\''), 'Missing input_format in decoder_scripts');
+assert.ok(decoderMig001.includes('"sample_payload" TEXT'), 'Missing sample_payload in decoder_scripts');
+assert.ok(decoderMig001.includes('"sample_fport" INTEGER NOT NULL DEFAULT 1'), 'Missing sample_fport in decoder_scripts');
+assert.ok(decoderMig001.includes('"sample_decoded" JSONB DEFAULT \'{}\'::jsonb'), 'Missing sample_decoded JSONB in decoder_scripts');
+assert.ok(decoderMig001.includes('"is_active" BOOLEAN NOT NULL DEFAULT true'), 'Missing is_active in decoder_scripts');
+assert.ok(decoderMig001.includes('CONSTRAINT "UQ_decoder_scripts_sku_long_fw" UNIQUE ("sku", "long_fw")'), 'Missing UNIQUE(sku, long_fw) constraint');
+assert.ok(decoderMig001.includes('CREATE OR REPLACE VIEW plugins_schema.v_memmap_decoders'), 'Missing v_memmap_decoders view');
+assert.ok(decoderMig001.includes('COALESCE(mp.sku, ds.sku) AS sku'), 'Missing COALESCE sku in v_memmap_decoders');
+assert.ok(decoderMig001.includes('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE plugins_schema."decoder_scripts" TO itest_system_user;'), 'Missing grant on decoder_scripts for itest_system_user');
+assert.ok(decoderMig001.includes('GRANT ALL PRIVILEGES ON TABLE plugins_schema."decoder_scripts" TO itest_plugins_user;'), 'Missing grant on decoder_scripts for itest_plugins_user');
+
+const pluginsSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/plugins/schema.sql'), 'utf8');
+assert.ok(pluginsSchemaSql.includes('CREATE TABLE IF NOT EXISTS plugins_schema."decoder_scripts"'), 'Missing decoder_scripts in schema.sql');
+assert.ok(pluginsSchemaSql.includes('CREATE OR REPLACE VIEW plugins_schema.v_memmap_decoders'), 'Missing v_memmap_decoders in schema.sql');
+console.log('✓ 001_create_decoder_scripts_and_views.sql & schemas/plugins/schema.sql match Plugin Decoder specifications');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

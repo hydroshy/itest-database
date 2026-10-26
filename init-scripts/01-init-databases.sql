@@ -46,6 +46,12 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA system_schema GRANT ALL ON TABLES TO itest_sy
 ALTER DEFAULT PRIVILEGES IN SCHEMA system_schema GRANT ALL ON SEQUENCES TO itest_system_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA system_schema GRANT ALL ON FUNCTIONS TO itest_system_user;
 
+-- Allow itest_system_user to access plugins_schema for core backend routing (e.g., decoder_scripts, telemetry)
+GRANT USAGE, CREATE ON SCHEMA plugins_schema TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA plugins_schema GRANT ALL ON TABLES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA plugins_schema GRANT ALL ON SEQUENCES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA plugins_schema GRANT ALL ON FUNCTIONS TO itest_system_user;
+
 -- PLUGINS USER: Full permissions on plugins_schema, read permission on system_schema (for device/plugin lookups)
 GRANT USAGE, CREATE ON SCHEMA plugins_schema TO itest_plugins_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA plugins_schema GRANT ALL ON TABLES TO itest_plugins_user;

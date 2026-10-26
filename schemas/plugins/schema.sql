@@ -96,3 +96,78 @@ CREATE INDEX IF NOT EXISTS "idx_telemetry_metric_time" ON plugins_schema."teleme
 CREATE INDEX IF NOT EXISTS "idx_telemetry_recorded_at" ON plugins_schema."telemetry_records"("recorded_at" DESC);
 CREATE INDEX IF NOT EXISTS "idx_command_logs_device" ON plugins_schema."command_logs"("device_id", "created_at" DESC);
 CREATE INDEX IF NOT EXISTS "idx_conn_channels_protocol" ON plugins_schema."connection_channels"("protocol");
+
+-- ==============================================================================
+-- 7. Trigger Function for Updated At
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION plugins_schema.set_current_timestamp_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==============================================================================
+-- 8. Decoder Scripts Store (LoRaWAN & IoT Codecs)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS plugins_schema."decoder_scripts" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "name" VARCHAR(255) NOT NULL,
+  "sku" VARCHAR(100) NOT NULL,
+  "long_fw" VARCHAR(100) NOT NULL,
+  "protocol" VARCHAR(50) NOT NULL DEFAULT 'lorawan',
+  "script" TEXT NOT NULL,
+  "description" TEXT,
+  "input_format" VARCHAR(50) NOT NULL DEFAULT 'hex',
+  "sample_payload" TEXT,
+  "sample_fport" INTEGER NOT NULL DEFAULT 1,
+  "sample_decoded" JSONB DEFAULT '{}'::jsonb,
+  "is_active" BOOLEAN NOT NULL DEFAULT true,
+  "metadata" JSONB DEFAULT '{}'::jsonb,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "created_by" VARCHAR(100) DEFAULT 'system',
+  CONSTRAINT "UQ_decoder_scripts_sku_long_fw" UNIQUE ("sku", "long_fw")
+);
+
+CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_sku" ON plugins_schema."decoder_scripts" ("sku");
+CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_long_fw" ON plugins_schema."decoder_scripts" ("long_fw");
+CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_sku_long_fw" ON plugins_schema."decoder_scripts" ("sku", "long_fw");
+CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_is_active" ON plugins_schema."decoder_scripts" ("is_active");
+CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_sample_decoded" ON plugins_schema."decoder_scripts" USING GIN ("sample_decoded");
+CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_metadata" ON plugins_schema."decoder_scripts" USING GIN ("metadata");
+
+DROP TRIGGER IF EXISTS "trg_decoder_scripts_updated_at" ON plugins_schema."decoder_scripts";
+CREATE TRIGGER "trg_decoder_scripts_updated_at"
+  BEFORE UPDATE ON plugins_schema."decoder_scripts"
+  FOR EACH ROW
+  EXECUTE FUNCTION plugins_schema.set_current_timestamp_updated_at();
+
+-- ==============================================================================
+-- 9. View: v_memmap_decoders (Bridge MemMap Profiles & Decoder Scripts)
+-- ==============================================================================
+CREATE OR REPLACE VIEW plugins_schema.v_memmap_decoders AS
+SELECT 
+  mp.id AS memmap_profile_id,
+  mp.name AS profile_name,
+  COALESCE(mp.sku, ds.sku) AS sku,
+  COALESCE(mp.long_fw, ds.long_fw) AS long_fw,
+  mp.short_fw,
+  ds.id AS decoder_id,
+  ds.name AS decoder_name,
+  ds.protocol,
+  ds.input_format,
+  ds.sample_payload,
+  ds.sample_fport,
+  ds.sample_decoded,
+  COALESCE(ds.is_active, false) AS has_active_decoder,
+  (ds.id IS NOT NULL) AS is_configured,
+  ds.created_at AS decoder_created_at,
+  ds.updated_at AS decoder_updated_at,
+  ds.created_by AS decoder_created_by
+FROM memmap_manager.memmap_profiles mp
+FULL OUTER JOIN plugins_schema.decoder_scripts ds
+  ON LOWER(TRIM(mp.sku)) = LOWER(TRIM(ds.sku))
+ AND LOWER(TRIM(mp.long_fw)) = LOWER(TRIM(ds.long_fw));
+
