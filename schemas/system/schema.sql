@@ -382,3 +382,75 @@ SELECT * FROM system_schema."menu_items";
 CREATE OR REPLACE VIEW public."role_menu_permissions" AS
 SELECT * FROM system_schema."role_menu_permissions";
 
+-- 7. Devices & Device Packets for Testing & Device Management
+CREATE TABLE IF NOT EXISTS system_schema."devices" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "serial_number" VARCHAR(100) NOT NULL UNIQUE,
+  "network_id" VARCHAR(100),
+  "device_name" VARCHAR(255) NOT NULL,
+  "device_type" VARCHAR(100) NOT NULL DEFAULT 'end_device',
+  "plugin_id" VARCHAR(128) NOT NULL DEFAULT 'testing',
+  "so_id" UUID,
+  "so_number" VARCHAR(100),
+  "wa_id" UUID,
+  "wa_number" VARCHAR(100),
+  "item_code" VARCHAR(100),
+  "status" VARCHAR(50) NOT NULL DEFAULT 'active',
+  "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "idx_devices_serial_number" ON system_schema."devices"("serial_number");
+CREATE INDEX IF NOT EXISTS "idx_devices_network_id" ON system_schema."devices"("network_id");
+CREATE INDEX IF NOT EXISTS "idx_devices_plugin_id" ON system_schema."devices"("plugin_id");
+CREATE INDEX IF NOT EXISTS "idx_devices_so_number" ON system_schema."devices"("so_number");
+CREATE INDEX IF NOT EXISTS "idx_devices_wa_number" ON system_schema."devices"("wa_number");
+CREATE INDEX IF NOT EXISTS "idx_devices_item_code" ON system_schema."devices"("item_code");
+CREATE INDEX IF NOT EXISTS "idx_devices_status" ON system_schema."devices"("status");
+CREATE INDEX IF NOT EXISTS "idx_devices_so_id" ON system_schema."devices"("so_id");
+CREATE INDEX IF NOT EXISTS "idx_devices_wa_id" ON system_schema."devices"("wa_id");
+CREATE INDEX IF NOT EXISTS "idx_devices_metadata_gin" ON system_schema."devices" USING GIN ("metadata");
+
+CREATE TABLE IF NOT EXISTS system_schema."device_packets" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "device_id" UUID NOT NULL REFERENCES system_schema."devices"("id") ON DELETE CASCADE,
+  "packet_type" VARCHAR(50) NOT NULL DEFAULT 'uplink',
+  "f_port" INTEGER,
+  "f_cnt" BIGINT,
+  "raw_payload" TEXT,
+  "decoded_payload" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "rf_info" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "idx_device_packets_device_id_created_at" ON system_schema."device_packets"("device_id", "created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_device_packets_packet_type" ON system_schema."device_packets"("packet_type");
+CREATE INDEX IF NOT EXISTS "idx_device_packets_decoded_payload_gin" ON system_schema."device_packets" USING GIN ("decoded_payload");
+CREATE INDEX IF NOT EXISTS "idx_device_packets_rf_info_gin" ON system_schema."device_packets" USING GIN ("rf_info");
+
+CREATE OR REPLACE VIEW system_schema.v_devices_traceability AS
+SELECT
+  d."id" AS "device_id",
+  d."serial_number",
+  d."network_id",
+  d."device_name",
+  d."device_type",
+  d."plugin_id",
+  d."status",
+  d."so_id",
+  d."so_number",
+  d."wa_id",
+  d."wa_number",
+  d."item_code",
+  d."metadata",
+  d."created_at",
+  d."updated_at",
+  so."customer_name",
+  so."partner_email",
+  wa."planned_quantity" AS "wa_planned_quantity"
+FROM system_schema."devices" d
+LEFT JOIN traceability_manager."traceability_so" so ON d."so_id" = so."id" OR d."so_number" = so."so_number"
+LEFT JOIN traceability_manager."traceability_wa" wa ON d."wa_id" = wa."id" OR d."wa_number" = wa."wa_number";
+
+

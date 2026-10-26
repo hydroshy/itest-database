@@ -28,6 +28,8 @@ const requiredFiles = [
   'schemas/traceability-manager/METABASE_DOCS.md',
   'schemas/system/migrations/003_create_menu_items_and_role_permissions.sql',
   'schemas/system/migrations/004_create_system_menu_compat_views.sql',
+  'schemas/system/migrations/005_create_testing_devices_and_packets_tables.sql',
+  'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'scripts/migrate.js'
 ];
 
@@ -155,5 +157,35 @@ assert.ok(menuMigration004.includes('CREATE OR REPLACE VIEW system_schema."syste
 assert.ok(menuMigration004.includes('GRANT ALL PRIVILEGES ON TABLE public."system_menu_items" TO itest_system_user;'), 'Missing grant on public.system_menu_items');
 assert.ok(menuMigration004.includes('ALTER ROLE itest_system_user SET search_path'), 'Missing search_path update for itest_system_user');
 console.log('✓ 004_create_system_menu_compat_views.sql matches all Menu compatibility view specs');
+
+// 8. Validate system migration 005 (devices & device_packets for testing plugin)
+const systemMig005 = fs.readFileSync(
+  path.join(__dirname, 'schemas/system/migrations/005_create_testing_devices_and_packets_tables.sql'),
+  'utf8'
+);
+assert.ok(systemMig005.includes('CREATE TABLE IF NOT EXISTS system_schema."devices"'), 'Missing devices table in system migration 005');
+assert.ok(systemMig005.includes('CREATE TABLE IF NOT EXISTS system_schema."device_packets"'), 'Missing device_packets table in system migration 005');
+assert.ok(systemMig005.includes('"serial_number" VARCHAR(100) NOT NULL UNIQUE'), 'Missing serial_number column in devices');
+assert.ok(systemMig005.includes('"network_id" VARCHAR(100)'), 'Missing network_id column in devices');
+assert.ok(systemMig005.includes('"plugin_id" VARCHAR(128) NOT NULL DEFAULT \'testing\''), 'Missing plugin_id column in devices');
+assert.ok(systemMig005.includes('"so_number" VARCHAR(100)'), 'Missing so_number column in devices');
+assert.ok(systemMig005.includes('"wa_number" VARCHAR(100)'), 'Missing wa_number column in devices');
+assert.ok(systemMig005.includes('"item_code" VARCHAR(100)'), 'Missing item_code column in devices');
+assert.ok(systemMig005.includes('"raw_payload" TEXT'), 'Missing raw_payload in device_packets');
+assert.ok(systemMig005.includes('"decoded_payload" JSONB NOT NULL DEFAULT \'{}\'::jsonb'), 'Missing decoded_payload JSONB in device_packets');
+assert.ok(systemMig005.includes('"rf_info" JSONB NOT NULL DEFAULT \'{}\'::jsonb'), 'Missing rf_info JSONB in device_packets');
+assert.ok(systemMig005.includes('CREATE OR REPLACE VIEW system_schema.v_devices_traceability'), 'Missing v_devices_traceability view');
+console.log('✓ 005_create_testing_devices_and_packets_tables.sql matches all Testing Plugin specifications');
+
+// 9. Validate lorawan migration 003 (gateway_test_sessions)
+const lorawanMig003 = fs.readFileSync(
+  path.join(__dirname, 'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql'),
+  'utf8'
+);
+assert.ok(lorawanMig003.includes('CREATE TABLE IF NOT EXISTS lorawan_chirpstack."gateway_test_sessions"'), 'Missing gateway_test_sessions table');
+assert.ok(lorawanMig003.includes('"gateway_id" VARCHAR(64) NOT NULL'), 'Missing gateway_id column');
+assert.ok(lorawanMig003.includes('"status" VARCHAR(50) NOT NULL DEFAULT \'IN_PROGRESS\''), 'Missing status column');
+assert.ok(lorawanMig003.includes('"summary" JSONB NOT NULL DEFAULT \'{}\'::jsonb'), 'Missing summary JSONB column');
+console.log('✓ 003_create_gateway_test_sessions.sql matches Gateway test flow specifications');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
