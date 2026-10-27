@@ -29,6 +29,7 @@ const requiredFiles = [
   'schemas/system/migrations/003_create_menu_items_and_role_permissions.sql',
   'schemas/system/migrations/004_create_system_menu_compat_views.sql',
   'schemas/system/migrations/005_create_testing_devices_and_packets_tables.sql',
+  'schemas/system/migrations/006_add_gateway_testing_and_device_plugin_menus.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
@@ -38,6 +39,7 @@ const requiredFiles = [
   'schemas/devices/migrations/001_create_devices_schema_and_tables.sql',
   'schemas/devices/migrations/002_add_device_id_and_gateway_name_columns.sql',
   'schemas/devices/migrations/003_add_device_serial_number_and_traceability_columns.sql',
+  'schemas/devices/migrations/004_update_device_plugin_id_default_to_device.sql',
   'scripts/migrate.js'
 ];
 
@@ -310,5 +312,32 @@ const migrateJs = fs.readFileSync(path.join(__dirname, 'scripts/migrate.js'), 'u
 assert.ok(migrateJs.includes("'devices':"), "Missing 'devices' source in migrate.js");
 assert.ok(migrateJs.includes("'decoder':"), "Missing 'decoder' source in migrate.js");
 console.log('✓ Configuration for devices and decoder in init-scripts and migrate.js validated');
+
+// 14. Validate System Migration 006 (Gateway Testing & Device Plugin Menus)
+const systemMigration006Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/006_add_gateway_testing_and_device_plugin_menus.sql'), 'utf8');
+assert.ok(systemMigration006Sql.includes("'testing:gateway'"), "Missing 'testing:gateway' in system migration 006");
+assert.ok(systemMigration006Sql.includes("'device:devices'"), "Missing 'device:devices' in system migration 006");
+assert.ok(systemMigration006Sql.includes("'Gateway Testing'"), "Missing 'Gateway Testing' title in system migration 006");
+assert.ok(systemMigration006Sql.includes("'/plugins/testing?tab=gateway'"), "Missing Gateway route in system migration 006");
+assert.ok(systemMigration006Sql.includes("'/plugins/device?tab=devices'"), "Missing Device route in system migration 006");
+assert.ok(systemMigration006Sql.includes("'menu:testing-gateway:view'"), "Missing menu:testing-gateway:view permission");
+assert.ok(systemMigration006Sql.includes("'menu:device-devices:view'"), "Missing menu:device-devices:view permission");
+assert.ok(systemMigration006Sql.includes("ALTER TABLE system_schema.\"devices\" ALTER COLUMN \"plugin_id\" SET DEFAULT 'device'"), "Missing default 'device' in system migration 006");
+console.log('✓ System migration 006 for Gateway Testing and Device menus validated');
+
+// 15. Validate Devices Migration 004 (Device Plugin ID default update)
+const devicesMigration004Sql = fs.readFileSync(path.join(__dirname, 'schemas/devices/migrations/004_update_device_plugin_id_default_to_device.sql'), 'utf8');
+assert.ok(devicesMigration004Sql.includes("ALTER TABLE devices.devices ALTER COLUMN plugin_id SET DEFAULT 'device'"), "Missing ALTER COLUMN plugin_id SET DEFAULT 'device' in devices migration 004");
+assert.ok(devicesMigration004Sql.includes("NEW.plugin_id = 'device'"), "Missing NEW.plugin_id = 'device' trigger update in devices migration 004");
+console.log('✓ Devices migration 004 validated');
+
+// 16. Validate Schema files for Gateway Testing & Device Separation
+assert.ok(systemSchemaSql.includes("'testing:gateway'"), "Missing 'testing:gateway' in system/schema.sql");
+assert.ok(systemSchemaSql.includes("'device:devices'"), "Missing 'device:devices' in system/schema.sql");
+assert.ok(systemSchemaSql.includes('"plugin_id" VARCHAR(128) NOT NULL DEFAULT \'device\''), "Missing default 'device' for plugin_id in system/schema.sql");
+
+assert.ok(devicesSchemaSql.includes("plugin_id VARCHAR(128) DEFAULT 'device'"), "Missing default 'device' for plugin_id in devices/schema.sql");
+assert.ok(devicesSchemaSql.includes("NEW.plugin_id = 'device'"), "Missing NEW.plugin_id = 'device' in devices/schema.sql trigger");
+console.log('✓ Schema files consistency for Gateway Testing and Device Separation validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

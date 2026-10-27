@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS devices.devices (
     network_id VARCHAR(100),
     device_name VARCHAR(255) DEFAULT 'Device',
     device_type VARCHAR(100) DEFAULT 'end_device',
-    plugin_id VARCHAR(128) DEFAULT 'testing',
+    plugin_id VARCHAR(128) DEFAULT 'device',
     sku VARCHAR(100),
     so_id UUID,
     so_number VARCHAR(100),
@@ -58,7 +58,7 @@ BEGIN
         NEW.device_type = 'end_device';
     END IF;
     IF NEW.plugin_id IS NULL OR TRIM(NEW.plugin_id) = '' THEN
-        NEW.plugin_id = 'testing';
+        NEW.plugin_id = 'device';
     END IF;
     IF NEW.device_name IS NULL OR TRIM(NEW.device_name) = '' THEN
         NEW.device_name = 'Device ' || COALESCE(NEW.serial_number, NEW.dev_eui, NEW.id::text);

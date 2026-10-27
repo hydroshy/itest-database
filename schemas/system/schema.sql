@@ -325,7 +325,9 @@ INSERT INTO system_schema."menu_items" (
   ('device-traceability:devices', 'Device Traceability List', 'Tra cứu dòng đời thiết bị, lịch sử test và trạng thái final config', '/plugins/device-traceability?tab=devices', 'Odometer', 'plugin', 'device-traceability', 'devices', 6, true),
   ('device-traceability:config', 'Tra Cứu Cấu Hình Cuối', 'Tra cứu và giám sát cấu hình cuối cùng của thiết bị', '/plugins/device-traceability?tab=config', 'DocumentChecked', 'plugin', 'device-traceability', 'config', 7, true),
   ('memmap-payload:manager', 'Memmap Profiles', 'Quản lý template thanh ghi Modbus định hình payload thiết bị', '/plugins/memmap-payload', 'Collection', 'plugin', 'memmap-payload', 'manager', 8, true),
-  ('lorawan-chirpstack:integration', 'LoRaWAN ChirpStack Integration', 'Đồng bộ thiết bị và cấu hình kết nối ChirpStack v4', '/plugins/lorawan-chirpstack', 'Connection', 'plugin', 'lorawan-chirpstack', 'integration', 9, true)
+  ('lorawan-chirpstack:integration', 'LoRaWAN ChirpStack Integration', 'Đồng bộ thiết bị và cấu hình kết nối ChirpStack v4', '/plugins/lorawan-chirpstack', 'Connection', 'plugin', 'lorawan-chirpstack', 'integration', 9, true),
+  ('testing:gateway', 'Gateway Testing', 'Đo kiểm Gateway, kiểm tra RF/RSSI/SNR, gói tin và liên kết ChirpStack', '/plugins/testing?tab=gateway', 'Odometer', 'plugin', 'testing', 'gateway', 11, true),
+  ('device:devices', 'Thiết Bị (Devices)', 'Quản lý thông tin thiết bị, serial number, network ID và truy vết nguồn gốc', '/plugins/device?tab=devices', 'Cpu', 'plugin', 'device', 'devices', 12, true)
 ON CONFLICT ("id") DO UPDATE SET
   "title" = EXCLUDED."title",
   "description" = EXCLUDED."description",
@@ -350,7 +352,7 @@ SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
 WHERE r."code" IN ('SUB_ADMIN', 'sub_admin')
-  AND m."id" IN ('dashboard', 'final-config:tool', 'final-config:manager', 'device-traceability:so', 'device-traceability:devices', 'device-traceability:config', 'memmap-payload:manager')
+  AND m."id" IN ('dashboard', 'final-config:tool', 'final-config:manager', 'device-traceability:so', 'device-traceability:devices', 'device-traceability:config', 'memmap-payload:manager', 'testing:gateway', 'device:devices')
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
@@ -358,7 +360,7 @@ SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
 WHERE r."code" IN ('OPERATOR', 'operator')
-  AND m."id" IN ('final-config:tool', 'device-traceability:devices', 'lorawan-chirpstack:integration')
+  AND m."id" IN ('final-config:tool', 'device-traceability:devices', 'lorawan-chirpstack:integration', 'testing:gateway', 'device:devices')
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
@@ -389,7 +391,7 @@ CREATE TABLE IF NOT EXISTS system_schema."devices" (
   "network_id" VARCHAR(100),
   "device_name" VARCHAR(255) NOT NULL,
   "device_type" VARCHAR(100) NOT NULL DEFAULT 'end_device',
-  "plugin_id" VARCHAR(128) NOT NULL DEFAULT 'testing',
+  "plugin_id" VARCHAR(128) NOT NULL DEFAULT 'device',
   "so_id" UUID,
   "so_number" VARCHAR(100),
   "wa_id" UUID,
