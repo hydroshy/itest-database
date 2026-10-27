@@ -8,7 +8,7 @@ CREATE SCHEMA IF NOT EXISTS devices;
 -- 1. Devices Table
 CREATE TABLE IF NOT EXISTS devices.devices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    dev_eui VARCHAR(32) NOT NULL,
+    dev_eui VARCHAR(32),
     serial_number VARCHAR(100),
     network_id VARCHAR(100),
     device_name VARCHAR(255) DEFAULT 'Device',
@@ -30,27 +30,50 @@ CREATE TABLE IF NOT EXISTS devices.devices (
 );
 
 CREATE INDEX IF NOT EXISTS idx_devices_dev_eui ON devices.devices(dev_eui);
-CREATE INDEX IF NOT EXISTS idx_devices_serial_number ON devices.devices(serial_number);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_serial_number ON devices.devices(serial_number) WHERE serial_number IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_devices_network_id ON devices.devices(network_id);
+CREATE INDEX IF NOT EXISTS idx_devices_device_type ON devices.devices(device_type);
+CREATE INDEX IF NOT EXISTS idx_devices_plugin_id ON devices.devices(plugin_id);
 CREATE INDEX IF NOT EXISTS idx_devices_sku ON devices.devices(sku);
+CREATE INDEX IF NOT EXISTS idx_devices_so_id ON devices.devices(so_id);
+CREATE INDEX IF NOT EXISTS idx_devices_so_number ON devices.devices(so_number);
+CREATE INDEX IF NOT EXISTS idx_devices_wa_id ON devices.devices(wa_id);
+CREATE INDEX IF NOT EXISTS idx_devices_wa_number ON devices.devices(wa_number);
+CREATE INDEX IF NOT EXISTS idx_devices_item_code ON devices.devices(item_code);
 CREATE INDEX IF NOT EXISTS idx_devices_status ON devices.devices(status);
 CREATE INDEX IF NOT EXISTS idx_devices_last_seen ON devices.devices(last_seen DESC);
 CREATE INDEX IF NOT EXISTS idx_devices_metadata_gin ON devices.devices USING GIN (metadata);
 
--- Trigger for devices.updated_at
-CREATE OR REPLACE FUNCTION devices.update_updated_at_column()
+-- Trigger for sync_device_serial_and_deveui and updated_at
+CREATE OR REPLACE FUNCTION devices.sync_device_serial_and_deveui()
 RETURNS TRIGGER AS $$
 BEGIN
+    IF (NEW.serial_number IS NULL OR TRIM(NEW.serial_number) = '') AND (NEW.dev_eui IS NOT NULL AND TRIM(NEW.dev_eui) <> '') THEN
+        NEW.serial_number = NEW.dev_eui;
+    ELSIF (NEW.dev_eui IS NULL OR TRIM(NEW.dev_eui) = '') AND (NEW.serial_number IS NOT NULL AND TRIM(NEW.serial_number) <> '') THEN
+        NEW.dev_eui = NEW.serial_number;
+    END IF;
+
+    IF NEW.device_type IS NULL OR TRIM(NEW.device_type) = '' THEN
+        NEW.device_type = 'end_device';
+    END IF;
+    IF NEW.plugin_id IS NULL OR TRIM(NEW.plugin_id) = '' THEN
+        NEW.plugin_id = 'testing';
+    END IF;
+    IF NEW.device_name IS NULL OR TRIM(NEW.device_name) = '' THEN
+        NEW.device_name = 'Device ' || COALESCE(NEW.serial_number, NEW.dev_eui, NEW.id::text);
+    END IF;
+
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_devices_updated_at ON devices.devices;
-CREATE TRIGGER trg_devices_updated_at
-BEFORE UPDATE ON devices.devices
+DROP TRIGGER IF EXISTS trg_sync_device_serial_and_deveui ON devices.devices;
+CREATE TRIGGER trg_sync_device_serial_and_deveui
+BEFORE INSERT OR UPDATE ON devices.devices
 FOR EACH ROW
-EXECUTE FUNCTION devices.update_updated_at_column();
+EXECUTE FUNCTION devices.sync_device_serial_and_deveui();
 
 -- 2. Gateway Test Sessions Table
 CREATE TABLE IF NOT EXISTS devices.gateway_test_sessions (

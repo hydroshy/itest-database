@@ -33,9 +33,11 @@ const requiredFiles = [
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
   'schemas/decoder/migrations/001_create_decoder_schema_and_tables.sql',
+  'schemas/decoder/migrations/002_add_name_column_to_decoder_scripts.sql',
   'schemas/devices/schema.sql',
   'schemas/devices/migrations/001_create_devices_schema_and_tables.sql',
   'schemas/devices/migrations/002_add_device_id_and_gateway_name_columns.sql',
+  'schemas/devices/migrations/003_add_device_serial_number_and_traceability_columns.sql',
   'scripts/migrate.js'
 ];
 
@@ -232,8 +234,17 @@ assert.ok(decoderMigrationSql.includes('CREATE OR REPLACE VIEW plugins_schema.v_
 const decoderSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/decoder/schema.sql'), 'utf8');
 assert.ok(decoderSchemaSql.includes('CREATE SCHEMA IF NOT EXISTS decoder;'), 'Missing CREATE SCHEMA in decoder/schema.sql');
 assert.ok(decoderSchemaSql.includes('CREATE TABLE IF NOT EXISTS decoder.decoder_scripts'), 'Missing decoder.decoder_scripts in decoder/schema.sql');
+assert.ok(decoderSchemaSql.includes('name VARCHAR(255)'), 'Missing name in decoder/schema.sql');
 assert.ok(decoderSchemaSql.includes('CREATE OR REPLACE VIEW decoder.v_memmap_decoders'), 'Missing decoder.v_memmap_decoders in decoder/schema.sql');
-console.log('✓ Dedicated decoder schema, table, views and compatibility views validated');
+
+// 11b. Validate migration 002 for decoder schema (name column, backfill, trigger, indexes, views)
+const decoderMigration002Sql = fs.readFileSync(path.join(__dirname, 'schemas/decoder/migrations/002_add_name_column_to_decoder_scripts.sql'), 'utf8');
+assert.ok(decoderMigration002Sql.includes('name VARCHAR(255)'), 'Missing name column in decoder migration 002');
+assert.ok(decoderMigration002Sql.includes('decoder.sync_decoder_script_name()'), 'Missing sync_decoder_script_name trigger in decoder migration 002');
+assert.ok(decoderMigration002Sql.includes('CREATE INDEX IF NOT EXISTS idx_decoder_name'), 'Missing idx_decoder_name in decoder migration 002');
+assert.ok(decoderMigration002Sql.includes('CREATE OR REPLACE VIEW decoder.v_memmap_decoders'), 'Missing decoder.v_memmap_decoders view in decoder migration 002');
+assert.ok(decoderMigration002Sql.includes('CREATE VIEW plugins_schema.decoder_scripts'), 'Missing plugins_schema.decoder_scripts view in decoder migration 002');
+console.log('✓ Dedicated decoder schema, table, views, migration 002 and compatibility views validated');
 
 // 12. Validate dedicated 'devices' schema and migration
 const devicesMigrationSql = fs.readFileSync(path.join(__dirname, 'schemas/devices/migrations/001_create_devices_schema_and_tables.sql'), 'utf8');
@@ -267,6 +278,23 @@ assert.ok(devicesMigration002Sql.includes('packet_type VARCHAR'), 'Missing packe
 assert.ok(devicesMigration002Sql.includes('devices.sync_device_packets_columns()'), 'Missing sync_device_packets_columns trigger');
 assert.ok(devicesMigration002Sql.includes('devices.sync_gateway_test_sessions_columns()'), 'Missing sync_gateway_test_sessions_columns trigger');
 console.log('✓ Dedicated devices schema, tables, indexes, migration 002 and compatibility views validated');
+
+// 12c. Validate migration 003 for devices schema (serial_number, network_id, device_name, device_type, plugin_id, so_id, so_number, wa_id, wa_number, item_code, trigger, views)
+const devicesMigration003Sql = fs.readFileSync(path.join(__dirname, 'schemas/devices/migrations/003_add_device_serial_number_and_traceability_columns.sql'), 'utf8');
+assert.ok(devicesMigration003Sql.includes('serial_number VARCHAR(100)'), 'Missing serial_number in migration 003');
+assert.ok(devicesMigration003Sql.includes('network_id VARCHAR(100)'), 'Missing network_id in migration 003');
+assert.ok(devicesMigration003Sql.includes('device_name VARCHAR(255)'), 'Missing device_name in migration 003');
+assert.ok(devicesMigration003Sql.includes('device_type VARCHAR(100)'), 'Missing device_type in migration 003');
+assert.ok(devicesMigration003Sql.includes('plugin_id VARCHAR(128)'), 'Missing plugin_id in migration 003');
+assert.ok(devicesMigration003Sql.includes('so_id UUID'), 'Missing so_id in migration 003');
+assert.ok(devicesMigration003Sql.includes('so_number VARCHAR(100)'), 'Missing so_number in migration 003');
+assert.ok(devicesMigration003Sql.includes('wa_id UUID'), 'Missing wa_id in migration 003');
+assert.ok(devicesMigration003Sql.includes('wa_number VARCHAR(100)'), 'Missing wa_number in migration 003');
+assert.ok(devicesMigration003Sql.includes('item_code VARCHAR(100)'), 'Missing item_code in migration 003');
+assert.ok(devicesMigration003Sql.includes('devices.sync_device_serial_and_deveui()'), 'Missing sync_device_serial_and_deveui trigger in migration 003');
+assert.ok(devicesMigration003Sql.includes('CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_serial_number'), 'Missing idx_devices_serial_number in migration 003');
+assert.ok(devicesMigration003Sql.includes('devices.testing_devices'), 'Missing devices.testing_devices view refresh in migration 003');
+console.log('✓ Dedicated devices migration 003 validated');
 
 // 13. Validate init-scripts and migrate.js registration for devices & decoder
 assert.ok(initSql.includes('CREATE SCHEMA IF NOT EXISTS devices;'), 'Missing CREATE SCHEMA devices in 01-init-databases.sql');

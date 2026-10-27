@@ -7,6 +7,7 @@ CREATE SCHEMA IF NOT EXISTS decoder;
 -- 1. Decoder Scripts Table
 CREATE TABLE IF NOT EXISTS decoder.decoder_scripts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255),
     sku VARCHAR(100) NOT NULL,
     long_fw VARCHAR(100) NOT NULL,
     protocol VARCHAR(50) NOT NULL DEFAULT 'lorawan',
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS decoder.decoder_scripts (
 );
 
 -- Indexes
+CREATE INDEX IF NOT EXISTS idx_decoder_name ON decoder.decoder_scripts(name);
 CREATE INDEX IF NOT EXISTS idx_decoder_sku ON decoder.decoder_scripts(sku);
 CREATE INDEX IF NOT EXISTS idx_decoder_protocol ON decoder.decoder_scripts(protocol);
 CREATE INDEX IF NOT EXISTS idx_decoder_is_active ON decoder.decoder_scripts(is_active);
@@ -78,6 +80,7 @@ SELECT
     p.name AS memmap_profile_name,
     p.short_fw AS memmap_short_fw,
     d.id AS decoder_id,
+    d.name AS decoder_name,
     d.protocol,
     d.description AS decoder_description,
     d.input_format,
