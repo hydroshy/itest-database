@@ -35,6 +35,7 @@ const requiredFiles = [
   'schemas/decoder/migrations/001_create_decoder_schema_and_tables.sql',
   'schemas/devices/schema.sql',
   'schemas/devices/migrations/001_create_devices_schema_and_tables.sql',
+  'schemas/devices/migrations/002_add_device_id_and_gateway_name_columns.sql',
   'scripts/migrate.js'
 ];
 
@@ -251,7 +252,21 @@ assert.ok(devicesSchemaSql.includes('CREATE SCHEMA IF NOT EXISTS devices;'), 'Mi
 assert.ok(devicesSchemaSql.includes('CREATE TABLE IF NOT EXISTS devices.devices'), 'Missing devices.devices in devices/schema.sql');
 assert.ok(devicesSchemaSql.includes('CREATE TABLE IF NOT EXISTS devices.gateway_test_sessions'), 'Missing devices.gateway_test_sessions in devices/schema.sql');
 assert.ok(devicesSchemaSql.includes('CREATE TABLE IF NOT EXISTS devices.device_packets'), 'Missing devices.device_packets in devices/schema.sql');
-console.log('✓ Dedicated devices schema, tables, indexes and compatibility views validated');
+
+// 12b. Validate migration 002 for devices schema (device_id, raw_payload, decoded_payload, rf_info, gateway_name, etc.)
+const devicesMigration002Sql = fs.readFileSync(path.join(__dirname, 'schemas/devices/migrations/002_add_device_id_and_gateway_name_columns.sql'), 'utf8');
+assert.ok(devicesMigration002Sql.includes('gateway_name'), 'Missing gateway_name in migration 002');
+assert.ok(devicesMigration002Sql.includes('started_at'), 'Missing started_at in migration 002');
+assert.ok(devicesMigration002Sql.includes('ended_at'), 'Missing ended_at in migration 002');
+assert.ok(devicesMigration002Sql.includes('summary'), 'Missing summary in migration 002');
+assert.ok(devicesMigration002Sql.includes('device_id UUID'), 'Missing device_id UUID in migration 002');
+assert.ok(devicesMigration002Sql.includes('raw_payload TEXT'), 'Missing raw_payload TEXT in migration 002');
+assert.ok(devicesMigration002Sql.includes('decoded_payload JSONB'), 'Missing decoded_payload JSONB in migration 002');
+assert.ok(devicesMigration002Sql.includes('rf_info JSONB'), 'Missing rf_info JSONB in migration 002');
+assert.ok(devicesMigration002Sql.includes('packet_type VARCHAR'), 'Missing packet_type in migration 002');
+assert.ok(devicesMigration002Sql.includes('devices.sync_device_packets_columns()'), 'Missing sync_device_packets_columns trigger');
+assert.ok(devicesMigration002Sql.includes('devices.sync_gateway_test_sessions_columns()'), 'Missing sync_gateway_test_sessions_columns trigger');
+console.log('✓ Dedicated devices schema, tables, indexes, migration 002 and compatibility views validated');
 
 // 13. Validate init-scripts and migrate.js registration for devices & decoder
 assert.ok(initSql.includes('CREATE SCHEMA IF NOT EXISTS devices;'), 'Missing CREATE SCHEMA devices in 01-init-databases.sql');
