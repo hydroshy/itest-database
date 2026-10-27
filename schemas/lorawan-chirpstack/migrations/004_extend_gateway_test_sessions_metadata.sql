@@ -17,6 +17,10 @@
 
 SET search_path TO lorawan_chirpstack, public;
 
+-- Drop dependent views first to avoid view column dependency rules during table modification
+DROP VIEW IF EXISTS lorawan_chirpstack.v_gateway_test_sessions_detail CASCADE;
+DROP VIEW IF EXISTS lorawan_chirpstack.gateway_test_sessions CASCADE;
+
 DO $$
 BEGIN
     -- Scenario A: devices.gateway_test_sessions is the base table
@@ -102,8 +106,7 @@ BEGIN
             ALTER TABLE devices.gateway_test_sessions ADD COLUMN forwarder_config JSONB DEFAULT '{}'::jsonb;
         END IF;
 
-        ALTER TABLE devices.gateway_test_sessions ALTER COLUMN status TYPE VARCHAR(50);
-        ALTER TABLE devices.gateway_test_sessions ALTER COLUMN session_name TYPE VARCHAR(255);
+        ALTER TABLE devices.gateway_test_sessions ALTER COLUMN status SET DEFAULT 'REGISTERED';
         ALTER TABLE devices.gateway_test_sessions ALTER COLUMN session_name DROP NOT NULL;
         ALTER TABLE devices.gateway_test_sessions DROP CONSTRAINT IF EXISTS gateway_test_sessions_status_check;
 
@@ -193,8 +196,7 @@ BEGIN
             ALTER TABLE lorawan_chirpstack.gateway_test_sessions ADD COLUMN forwarder_config JSONB DEFAULT '{}'::jsonb;
         END IF;
 
-        ALTER TABLE lorawan_chirpstack.gateway_test_sessions ALTER COLUMN status TYPE VARCHAR(50);
-        ALTER TABLE lorawan_chirpstack.gateway_test_sessions ALTER COLUMN session_name TYPE VARCHAR(255);
+        ALTER TABLE lorawan_chirpstack.gateway_test_sessions ALTER COLUMN status SET DEFAULT 'REGISTERED';
         ALTER TABLE lorawan_chirpstack.gateway_test_sessions ALTER COLUMN session_name DROP NOT NULL;
 
         -- Create indexes

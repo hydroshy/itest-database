@@ -16,6 +16,11 @@
 -- Idempotency: Safe to re-run on existing PostgreSQL volumes.
 -- ==============================================================================
 
+-- 0. Drop dependent views first to avoid view column dependency rules during table modification
+DROP VIEW IF EXISTS lorawan_chirpstack.v_gateway_test_sessions_detail CASCADE;
+DROP VIEW IF EXISTS lorawan_chirpstack.gateway_test_sessions CASCADE;
+DROP VIEW IF EXISTS devices.v_gateway_test_sessions_detail CASCADE;
+
 DO $$
 BEGIN
     IF EXISTS (
@@ -104,9 +109,7 @@ BEGIN
         END IF;
 
         -- Relax status constraint & session_name length
-        ALTER TABLE devices.gateway_test_sessions ALTER COLUMN status TYPE VARCHAR(50);
         ALTER TABLE devices.gateway_test_sessions ALTER COLUMN status SET DEFAULT 'REGISTERED';
-        ALTER TABLE devices.gateway_test_sessions ALTER COLUMN session_name TYPE VARCHAR(255);
         ALTER TABLE devices.gateway_test_sessions ALTER COLUMN session_name DROP NOT NULL;
         ALTER TABLE devices.gateway_test_sessions DROP CONSTRAINT IF EXISTS gateway_test_sessions_status_check;
 
