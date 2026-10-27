@@ -31,6 +31,10 @@ const requiredFiles = [
   'schemas/system/migrations/005_create_testing_devices_and_packets_tables.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
+  'schemas/decoder/schema.sql',
+  'schemas/decoder/migrations/001_create_decoder_schema_and_tables.sql',
+  'schemas/devices/schema.sql',
+  'schemas/devices/migrations/001_create_devices_schema_and_tables.sql',
   'scripts/migrate.js'
 ];
 
@@ -215,5 +219,53 @@ const pluginsSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/plugins/s
 assert.ok(pluginsSchemaSql.includes('CREATE TABLE IF NOT EXISTS plugins_schema."decoder_scripts"'), 'Missing decoder_scripts in schema.sql');
 assert.ok(pluginsSchemaSql.includes('CREATE OR REPLACE VIEW plugins_schema.v_memmap_decoders'), 'Missing v_memmap_decoders in schema.sql');
 console.log('✓ 001_create_decoder_scripts_and_views.sql & schemas/plugins/schema.sql match Plugin Decoder specifications');
+
+// 11. Validate dedicated 'decoder' schema and migration
+const decoderMigrationSql = fs.readFileSync(path.join(__dirname, 'schemas/decoder/migrations/001_create_decoder_schema_and_tables.sql'), 'utf8');
+assert.ok(decoderMigrationSql.includes('CREATE SCHEMA IF NOT EXISTS decoder;'), 'Missing CREATE SCHEMA decoder');
+assert.ok(decoderMigrationSql.includes('CREATE TABLE IF NOT EXISTS decoder.decoder_scripts'), 'Missing decoder.decoder_scripts table');
+assert.ok(decoderMigrationSql.includes('CREATE OR REPLACE VIEW decoder.v_memmap_decoders'), 'Missing decoder.v_memmap_decoders view');
+assert.ok(decoderMigrationSql.includes('CREATE OR REPLACE VIEW plugins_schema.decoder_scripts'), 'Missing plugins_schema.decoder_scripts compatibility view');
+assert.ok(decoderMigrationSql.includes('CREATE OR REPLACE VIEW plugins_schema.v_memmap_decoders'), 'Missing plugins_schema.v_memmap_decoders compatibility view');
+
+const decoderSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/decoder/schema.sql'), 'utf8');
+assert.ok(decoderSchemaSql.includes('CREATE SCHEMA IF NOT EXISTS decoder;'), 'Missing CREATE SCHEMA in decoder/schema.sql');
+assert.ok(decoderSchemaSql.includes('CREATE TABLE IF NOT EXISTS decoder.decoder_scripts'), 'Missing decoder.decoder_scripts in decoder/schema.sql');
+assert.ok(decoderSchemaSql.includes('CREATE OR REPLACE VIEW decoder.v_memmap_decoders'), 'Missing decoder.v_memmap_decoders in decoder/schema.sql');
+console.log('✓ Dedicated decoder schema, table, views and compatibility views validated');
+
+// 12. Validate dedicated 'devices' schema and migration
+const devicesMigrationSql = fs.readFileSync(path.join(__dirname, 'schemas/devices/migrations/001_create_devices_schema_and_tables.sql'), 'utf8');
+assert.ok(devicesMigrationSql.includes('CREATE SCHEMA IF NOT EXISTS devices;'), 'Missing CREATE SCHEMA devices');
+assert.ok(devicesMigrationSql.includes('CREATE TABLE IF NOT EXISTS devices.devices'), 'Missing devices.devices table');
+assert.ok(devicesMigrationSql.includes('CREATE TABLE IF NOT EXISTS devices.gateway_test_sessions'), 'Missing devices.gateway_test_sessions table');
+assert.ok(devicesMigrationSql.includes('CREATE TABLE IF NOT EXISTS devices.device_packets'), 'Missing devices.device_packets table');
+assert.ok(devicesMigrationSql.includes('CREATE OR REPLACE VIEW devices.testing_devices'), 'Missing devices.testing_devices compatibility view');
+assert.ok(devicesMigrationSql.includes('CREATE OR REPLACE VIEW devices.testing_packets'), 'Missing devices.testing_packets compatibility view');
+assert.ok(devicesMigrationSql.includes('CREATE OR REPLACE VIEW system_schema.devices'), 'Missing system_schema.devices view');
+assert.ok(devicesMigrationSql.includes('CREATE OR REPLACE VIEW system_schema.device_packets'), 'Missing system_schema.device_packets view');
+assert.ok(devicesMigrationSql.includes('CREATE OR REPLACE VIEW lorawan_chirpstack.gateway_test_sessions'), 'Missing lorawan_chirpstack.gateway_test_sessions view');
+
+const devicesSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/devices/schema.sql'), 'utf8');
+assert.ok(devicesSchemaSql.includes('CREATE SCHEMA IF NOT EXISTS devices;'), 'Missing CREATE SCHEMA in devices/schema.sql');
+assert.ok(devicesSchemaSql.includes('CREATE TABLE IF NOT EXISTS devices.devices'), 'Missing devices.devices in devices/schema.sql');
+assert.ok(devicesSchemaSql.includes('CREATE TABLE IF NOT EXISTS devices.gateway_test_sessions'), 'Missing devices.gateway_test_sessions in devices/schema.sql');
+assert.ok(devicesSchemaSql.includes('CREATE TABLE IF NOT EXISTS devices.device_packets'), 'Missing devices.device_packets in devices/schema.sql');
+console.log('✓ Dedicated devices schema, tables, indexes and compatibility views validated');
+
+// 13. Validate init-scripts and migrate.js registration for devices & decoder
+assert.ok(initSql.includes('CREATE SCHEMA IF NOT EXISTS devices;'), 'Missing CREATE SCHEMA devices in 01-init-databases.sql');
+assert.ok(initSql.includes('CREATE SCHEMA IF NOT EXISTS decoder;'), 'Missing CREATE SCHEMA decoder in 01-init-databases.sql');
+assert.ok(initSql.includes('GRANT USAGE, CREATE ON SCHEMA devices TO itest_system_user;'), 'Missing itest_system_user grant on devices in 01-init-databases.sql');
+assert.ok(initSql.includes('GRANT USAGE, CREATE ON SCHEMA decoder TO itest_plugins_user;'), 'Missing itest_plugins_user grant on decoder in 01-init-databases.sql');
+
+const currentInitTablesSql = fs.readFileSync(path.join(__dirname, 'init-scripts/02-init-tables.sql'), 'utf8');
+assert.ok(currentInitTablesSql.includes('\\i /opt/schemas/devices/schema.sql'), 'Missing devices schema in 02-init-tables.sql');
+assert.ok(currentInitTablesSql.includes('\\i /opt/schemas/decoder/schema.sql'), 'Missing decoder schema in 02-init-tables.sql');
+
+const migrateJs = fs.readFileSync(path.join(__dirname, 'scripts/migrate.js'), 'utf8');
+assert.ok(migrateJs.includes("'devices':"), "Missing 'devices' source in migrate.js");
+assert.ok(migrateJs.includes("'decoder':"), "Missing 'decoder' source in migrate.js");
+console.log('✓ Configuration for devices and decoder in init-scripts and migrate.js validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

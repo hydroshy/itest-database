@@ -18,6 +18,8 @@ CREATE SCHEMA IF NOT EXISTS lorawan_chirpstack;
 CREATE SCHEMA IF NOT EXISTS memmap_manager;
 CREATE SCHEMA IF NOT EXISTS finalconfig_manager;
 CREATE SCHEMA IF NOT EXISTS traceability_manager;
+CREATE SCHEMA IF NOT EXISTS devices;
+CREATE SCHEMA IF NOT EXISTS decoder;
 
 -- 3. Create Dedicated Service Roles / Users
 DO $$
@@ -141,8 +143,44 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA traceability_manager GRANT SELECT ON TABLES T
 GRANT USAGE ON SCHEMA lorawan_chirpstack TO itest_ops_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA lorawan_chirpstack GRANT SELECT ON TABLES TO itest_ops_user;
 
+-- DEVICES SCHEMA: Management of testing devices, received packets, and gateway test sessions
+GRANT USAGE, CREATE ON SCHEMA devices TO itest_system_user;
+GRANT ALL ON ALL TABLES IN SCHEMA devices TO itest_system_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA devices TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA devices GRANT ALL ON TABLES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA devices GRANT ALL ON SEQUENCES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA devices GRANT ALL ON FUNCTIONS TO itest_system_user;
+
+GRANT USAGE, CREATE ON SCHEMA devices TO itest_plugins_user;
+GRANT ALL ON ALL TABLES IN SCHEMA devices TO itest_plugins_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA devices TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA devices GRANT ALL ON TABLES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA devices GRANT ALL ON SEQUENCES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA devices GRANT ALL ON FUNCTIONS TO itest_plugins_user;
+
+GRANT USAGE ON SCHEMA devices TO itest_ops_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA devices GRANT SELECT ON TABLES TO itest_ops_user;
+
+-- DECODER SCHEMA: Management of decoder scripts and memmap decoder views
+GRANT USAGE, CREATE ON SCHEMA decoder TO itest_plugins_user;
+GRANT ALL ON ALL TABLES IN SCHEMA decoder TO itest_plugins_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA decoder TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA decoder GRANT ALL ON TABLES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA decoder GRANT ALL ON SEQUENCES TO itest_plugins_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA decoder GRANT ALL ON FUNCTIONS TO itest_plugins_user;
+
+GRANT USAGE, CREATE ON SCHEMA decoder TO itest_system_user;
+GRANT ALL ON ALL TABLES IN SCHEMA decoder TO itest_system_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA decoder TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA decoder GRANT ALL ON TABLES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA decoder GRANT ALL ON SEQUENCES TO itest_system_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA decoder GRANT ALL ON FUNCTIONS TO itest_system_user;
+
+GRANT USAGE ON SCHEMA decoder TO itest_ops_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA decoder GRANT SELECT ON TABLES TO itest_ops_user;
+
 -- 5. Set default search_path for service roles
-ALTER ROLE itest_system_user SET search_path TO system_schema, lorawan_chirpstack, public;
-ALTER ROLE itest_plugins_user SET search_path TO plugins_schema, lorawan_chirpstack, system_schema, public;
-ALTER ROLE itest_ops_user SET search_path TO ops_schema, system_schema, plugins_schema, lorawan_chirpstack, public;
+ALTER ROLE itest_system_user SET search_path TO system_schema, devices, decoder, lorawan_chirpstack, public;
+ALTER ROLE itest_plugins_user SET search_path TO plugins_schema, decoder, devices, lorawan_chirpstack, system_schema, public;
+ALTER ROLE itest_ops_user SET search_path TO ops_schema, devices, decoder, system_schema, plugins_schema, lorawan_chirpstack, public;
 

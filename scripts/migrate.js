@@ -66,6 +66,16 @@ const SOURCES = {
     name: 'Traceability Manager Plugin',
     dir: path.join(SCHEMAS_DIR, 'traceability-manager/migrations'),
     schema: 'traceability_manager'
+  },
+  'devices': {
+    name: 'Devices, Packets & Sessions',
+    dir: path.join(SCHEMAS_DIR, 'devices/migrations'),
+    schema: 'devices'
+  },
+  'decoder': {
+    name: 'Payload Decoders',
+    dir: path.join(SCHEMAS_DIR, 'decoder/migrations'),
+    schema: 'decoder'
   }
 };
 

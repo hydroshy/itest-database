@@ -13,3 +13,5 @@
 \i /opt/schemas/memmap-manager/schema.sql
 \i /opt/schemas/finalconfig-manager/schema.sql
 \i /opt/schemas/traceability-manager/schema.sql
+\i /opt/schemas/devices/schema.sql
+\i /opt/schemas/decoder/schema.sql
