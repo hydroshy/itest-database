@@ -40,6 +40,8 @@ const requiredFiles = [
   'schemas/devices/migrations/002_add_device_id_and_gateway_name_columns.sql',
   'schemas/devices/migrations/003_add_device_serial_number_and_traceability_columns.sql',
   'schemas/devices/migrations/004_update_device_plugin_id_default_to_device.sql',
+  'schemas/devices/migrations/005_extend_gateway_test_sessions_metadata.sql',
+  'schemas/lorawan-chirpstack/migrations/004_extend_gateway_test_sessions_metadata.sql',
   'scripts/migrate.js'
 ];
 
@@ -332,6 +334,8 @@ assert.ok(devicesMigration004Sql.includes("NEW.plugin_id = 'device'"), "Missing 
 console.log('✓ Devices migration 004 validated');
 
 // 16. Validate Schema files for Gateway Testing & Device Separation
+const systemSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
+const lorawanSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/lorawan-chirpstack/schema.sql'), 'utf8');
 assert.ok(systemSchemaSql.includes("'testing:gateway'"), "Missing 'testing:gateway' in system/schema.sql");
 assert.ok(systemSchemaSql.includes("'device:devices'"), "Missing 'device:devices' in system/schema.sql");
 assert.ok(systemSchemaSql.includes('"plugin_id" VARCHAR(128) NOT NULL DEFAULT \'device\''), "Missing default 'device' for plugin_id in system/schema.sql");
@@ -339,5 +343,43 @@ assert.ok(systemSchemaSql.includes('"plugin_id" VARCHAR(128) NOT NULL DEFAULT \'
 assert.ok(devicesSchemaSql.includes("plugin_id VARCHAR(128) DEFAULT 'device'"), "Missing default 'device' for plugin_id in devices/schema.sql");
 assert.ok(devicesSchemaSql.includes("NEW.plugin_id = 'device'"), "Missing NEW.plugin_id = 'device' in devices/schema.sql trigger");
 console.log('✓ Schema files consistency for Gateway Testing and Device Separation validated');
+
+// 17. Validate LoRaWAN ChirpStack Migration 004 and Schema Entrypoint
+const lorawanMigration004Sql = fs.readFileSync(path.join(__dirname, 'schemas/lorawan-chirpstack/migrations/004_extend_gateway_test_sessions_metadata.sql'), 'utf8');
+assert.ok(lorawanMigration004Sql.includes('so_number VARCHAR(100)'), 'Missing so_number in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('wa_number VARCHAR(100)'), 'Missing wa_number in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('serial_number VARCHAR(100)'), 'Missing serial_number in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('gateway_ip VARCHAR(45)'), 'Missing gateway_ip in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('internet_test_type VARCHAR(20)'), 'Missing internet_test_type in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('region_test VARCHAR(50)'), 'Missing region_test in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('network_server_id UUID'), 'Missing network_server_id in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('config_snapshot JSONB'), 'Missing config_snapshot in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('forwarder_config JSONB'), 'Missing forwarder_config in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('v_gateway_test_sessions_detail'), 'Missing v_gateway_test_sessions_detail view in lorawan migration 004');
+assert.ok(lorawanMigration004Sql.includes('GRANT SELECT ON lorawan_chirpstack.v_gateway_test_sessions_detail TO itest_system_user'), 'Missing GRANT for v_gateway_test_sessions_detail');
+assert.ok(lorawanSchemaSql.includes('004_extend_gateway_test_sessions_metadata.sql'), 'Missing 004 migration in lorawan-chirpstack/schema.sql');
+console.log('✓ LoRaWAN ChirpStack migration 004 and detail view validated');
+
+// 18. Validate Devices Migration 005 and Devices Schema Gateway Metadata
+const devicesMigration005Sql = fs.readFileSync(path.join(__dirname, 'schemas/devices/migrations/005_extend_gateway_test_sessions_metadata.sql'), 'utf8');
+assert.ok(devicesMigration005Sql.includes('so_number VARCHAR(100)'), 'Missing so_number in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('wa_number VARCHAR(100)'), 'Missing wa_number in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('serial_number VARCHAR(100)'), 'Missing serial_number in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('gateway_ip VARCHAR(45)'), 'Missing gateway_ip in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('internet_test_type VARCHAR(20)'), 'Missing internet_test_type in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('region_test VARCHAR(50)'), 'Missing region_test in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('network_server_id UUID'), 'Missing network_server_id in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('config_snapshot JSONB'), 'Missing config_snapshot in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('forwarder_config JSONB'), 'Missing forwarder_config in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('idx_devices_gw_sessions_serial_number'), 'Missing serial_number index in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('idx_devices_gw_sessions_gateway_ip'), 'Missing gateway_ip index in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('idx_devices_gw_sessions_network_server_id'), 'Missing network_server_id index in devices migration 005');
+assert.ok(devicesMigration005Sql.includes('devices.sync_gateway_test_sessions_columns()'), 'Missing sync_gateway_test_sessions_columns in devices migration 005');
+
+assert.ok(devicesSchemaSql.includes('so_number VARCHAR(100)'), 'Missing so_number in devices/schema.sql gateway_test_sessions');
+assert.ok(devicesSchemaSql.includes('serial_number VARCHAR(100)'), 'Missing serial_number in devices/schema.sql gateway_test_sessions');
+assert.ok(devicesSchemaSql.includes('gateway_ip VARCHAR(45)'), 'Missing gateway_ip in devices/schema.sql gateway_test_sessions');
+assert.ok(devicesSchemaSql.includes('idx_devices_gw_sessions_serial_number'), 'Missing idx_devices_gw_sessions_serial_number in devices/schema.sql');
+console.log('✓ Devices migration 005 and devices/schema.sql gateway metadata validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

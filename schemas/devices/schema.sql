@@ -78,10 +78,29 @@ EXECUTE FUNCTION devices.sync_device_serial_and_deveui();
 -- 2. Gateway Test Sessions Table
 CREATE TABLE IF NOT EXISTS devices.gateway_test_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_name VARCHAR(255) NOT NULL,
-    gateway_id VARCHAR(64) NOT NULL,
+    session_name VARCHAR(255),
+    gateway_id VARCHAR(64),
     gateway_name VARCHAR(255),
-    status VARCHAR(50) NOT NULL DEFAULT 'IN_PROGRESS',
+    status VARCHAR(50) NOT NULL DEFAULT 'REGISTERED',
+    so_number VARCHAR(100),
+    wa_number VARCHAR(100),
+    serial_number VARCHAR(100),
+    eui VARCHAR(64),
+    item_code VARCHAR(100),
+    sku VARCHAR(100),
+    gateway_notes TEXT,
+    hardware_version VARCHAR(50),
+    firmware_version VARCHAR(50),
+    mechanical_version VARCHAR(50),
+    lte_module_serial_number VARCHAR(100),
+    lte_module_imei VARCHAR(100),
+    gateway_ip VARCHAR(45),
+    internet_test_type VARCHAR(20) DEFAULT 'ETHERNET',
+    region_test VARCHAR(50),
+    network_server_id UUID,
+    lorawan_frequency_plan VARCHAR(50),
+    config_snapshot JSONB DEFAULT '{}'::jsonb,
+    forwarder_config JSONB DEFAULT '{}'::jsonb,
     total_packets INTEGER NOT NULL DEFAULT 0,
     unique_devices INTEGER NOT NULL DEFAULT 0,
     started_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -98,6 +117,14 @@ CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_gateway_name ON devices.gatew
 CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_status ON devices.gateway_test_sessions(status);
 CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_start_time ON devices.gateway_test_sessions(start_time DESC);
 CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_started_at ON devices.gateway_test_sessions(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_serial_number ON devices.gateway_test_sessions(serial_number);
+CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_eui ON devices.gateway_test_sessions(eui);
+CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_so_number ON devices.gateway_test_sessions(so_number);
+CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_wa_number ON devices.gateway_test_sessions(wa_number);
+CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_item_code ON devices.gateway_test_sessions(item_code);
+CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_gateway_ip ON devices.gateway_test_sessions(gateway_ip);
+CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_network_server_id ON devices.gateway_test_sessions(network_server_id);
+CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_config_snapshot_gin ON devices.gateway_test_sessions USING GIN (config_snapshot);
 
 DROP TRIGGER IF EXISTS trg_devices_gateway_test_sessions_updated_at ON devices.gateway_test_sessions;
 CREATE TRIGGER trg_devices_gateway_test_sessions_updated_at
@@ -109,9 +136,20 @@ EXECUTE FUNCTION devices.update_updated_at_column();
 CREATE OR REPLACE FUNCTION devices.sync_gateway_test_sessions_columns()
 RETURNS TRIGGER AS $$
 BEGIN
+    IF NEW.eui IS NULL AND NEW.gateway_id IS NOT NULL THEN
+        NEW.eui = NEW.gateway_id;
+    ELSIF NEW.gateway_id IS NULL AND NEW.eui IS NOT NULL THEN
+        NEW.gateway_id = NEW.eui;
+    END IF;
+
     IF NEW.gateway_name IS NULL AND NEW.gateway_id IS NOT NULL THEN
         NEW.gateway_name = NEW.gateway_id;
     END IF;
+
+    IF NEW.session_name IS NULL THEN
+        NEW.session_name = 'GW-' || COALESCE(NEW.serial_number, NEW.gateway_id, 'SESSION');
+    END IF;
+
     IF NEW.started_at IS NOT NULL AND NEW.start_time IS NULL THEN
         NEW.start_time = NEW.started_at;
     ELSIF NEW.start_time IS NOT NULL AND NEW.started_at IS NULL THEN
