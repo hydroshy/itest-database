@@ -14,6 +14,15 @@ BEGIN
         SELECT 1 FROM information_schema.tables
         WHERE table_schema = 'devices' AND table_name = 'devices'
     ) THEN
+        -- 0. Drop dependent views first to prevent any view dependency/locking errors during column alterations
+        IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'system_schema') THEN
+            DROP VIEW IF EXISTS system_schema.devices CASCADE;
+            DROP VIEW IF EXISTS system_schema.testing_devices CASCADE;
+        END IF;
+        IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'devices') THEN
+            DROP VIEW IF EXISTS devices.testing_devices CASCADE;
+        END IF;
+
         -- 1. Add missing columns
         IF NOT EXISTS (
             SELECT 1 FROM information_schema.columns
@@ -34,8 +43,6 @@ BEGIN
             WHERE table_schema = 'devices' AND table_name = 'devices' AND column_name = 'device_name'
         ) THEN
             ALTER TABLE devices.devices ADD COLUMN device_name VARCHAR(255) DEFAULT 'Device';
-        ELSE
-            ALTER TABLE devices.devices ALTER COLUMN device_name TYPE VARCHAR(255);
         END IF;
 
         IF NOT EXISTS (
