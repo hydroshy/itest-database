@@ -20,14 +20,22 @@
 
 SET search_path TO system_schema, public;
 
--- 1. Create simulation_profiles Table
+-- 1. Create simulation_profiles Table (aligned with devices structure)
 CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "simu_id" VARCHAR(100) NOT NULL UNIQUE,
   "profile_name" VARCHAR(255) NOT NULL,
+  "serial_number" VARCHAR(100),
+  "network_id" VARCHAR(100),
+  "device_name" VARCHAR(255) NOT NULL,
+  "device_type" VARCHAR(100) NOT NULL DEFAULT 'lorawan_node',
+  "plugin_id" VARCHAR(100) NOT NULL DEFAULT 'testing',
+  "so_number" VARCHAR(100),
+  "wa_number" VARCHAR(100),
   "item_code" VARCHAR(100) NOT NULL,
+  "status" VARCHAR(50) NOT NULL DEFAULT 'template',
   "long_fw" VARCHAR(255) NOT NULL,
-  "target_device_name" VARCHAR(255) NOT NULL,
+  "target_device_name" VARCHAR(255),
   "activation" VARCHAR(20) NOT NULL DEFAULT 'OTAA',
   "dev_eui" VARCHAR(64),
   "app_eui" VARCHAR(64) DEFAULT '0000000000000000',
@@ -47,6 +55,17 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Idempotent column additions for existing installations
+ALTER TABLE system_schema."simulation_profiles"
+  ADD COLUMN IF NOT EXISTS "serial_number" VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS "network_id" VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS "device_name" VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS "device_type" VARCHAR(100) DEFAULT 'lorawan_node',
+  ADD COLUMN IF NOT EXISTS "plugin_id" VARCHAR(100) DEFAULT 'testing',
+  ADD COLUMN IF NOT EXISTS "so_number" VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS "wa_number" VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS "status" VARCHAR(50) DEFAULT 'template';
 
 COMMENT ON TABLE system_schema."simulation_profiles" IS 'Bảng hồ sơ thiết bị mẫu giả lập cho module Test Simulator, liên kết simu_id với item_code và long_fw';
 COMMENT ON COLUMN system_schema."simulation_profiles"."id" IS 'Khóa chính UUID hồ sơ giả lập';
@@ -100,11 +119,19 @@ CREATE INDEX IF NOT EXISTS "idx_simu_runs_item_code" ON system_schema."simulatio
 CREATE INDEX IF NOT EXISTS "idx_simu_runs_status" ON system_schema."simulation_runs"("status");
 CREATE INDEX IF NOT EXISTS "idx_simu_runs_started_at" ON system_schema."simulation_runs"("started_at" DESC);
 
--- 3. Seed Initial Simulation Profiles
+-- 3. Seed Initial Simulation Profiles (Aligned with Device Entity Schema)
 INSERT INTO system_schema."simulation_profiles" (
   "simu_id",
   "profile_name",
+  "serial_number",
+  "network_id",
+  "device_name",
+  "device_type",
+  "plugin_id",
+  "so_number",
+  "wa_number",
   "item_code",
+  "status",
   "long_fw",
   "target_device_name",
   "activation",
@@ -124,7 +151,15 @@ INSERT INTO system_schema."simulation_profiles" (
 (
   'SIMU-LORA-SP01',
   'Ổ Cắm Thông Minh & Còi Báo Động (Chuẩn 30 Phút)',
+  'SN-TMPL-SP01',
+  '70B3D57ED005ABCD',
+  'Smart Socket Multi-Sensor Node',
+  'lorawan_node',
+  'testing',
+  'SO-2025-9901',
+  'WA-2025-9901',
   'ITEM-9901-SMART-PLUG',
+  'template',
   'v1.2.0-rc3-long-fw-build9482',
   'Smart Socket Multi-Sensor Node',
   'OTAA',
@@ -149,7 +184,15 @@ INSERT INTO system_schema."simulation_profiles" (
 (
   'SIMU-LORA-WM02',
   'Đồng Hồ Nước Siêu Âm LoRaWAN DN15',
+  'SN-TMPL-WM02',
+  '70B3D57ED0052211',
+  'Water Meter Ultrasonic DN15',
+  'lorawan_node',
+  'testing',
+  'SO-2025-5520',
+  'WA-2025-5520',
   'ITEM-5520-WATER-METER',
+  'template',
   'v2.4.1-long-fw-build1029',
   'Water Meter Ultrasonic DN15',
   'OTAA',
@@ -173,7 +216,15 @@ INSERT INTO system_schema."simulation_profiles" (
 (
   'SIMU-LORA-ENV03',
   'Cảm Biến Khí & Cảnh Báo Khói Cháy',
+  'SN-TMPL-ENV03',
+  '70B3D57ED0059988',
+  'Gas & Smoke Industrial Node',
+  'lorawan_node',
+  'testing',
+  'SO-2025-8812',
+  'WA-2025-8812',
   'ITEM-8812-ENV-SENSOR',
+  'template',
   'v1.0.5-long-fw-build3311',
   'Gas & Smoke Industrial Node',
   'OTAA',
@@ -196,7 +247,15 @@ INSERT INTO system_schema."simulation_profiles" (
 )
 ON CONFLICT ("simu_id") DO UPDATE SET
   "profile_name" = EXCLUDED."profile_name",
+  "serial_number" = EXCLUDED."serial_number",
+  "network_id" = EXCLUDED."network_id",
+  "device_name" = EXCLUDED."device_name",
+  "device_type" = EXCLUDED."device_type",
+  "plugin_id" = EXCLUDED."plugin_id",
+  "so_number" = EXCLUDED."so_number",
+  "wa_number" = EXCLUDED."wa_number",
   "item_code" = EXCLUDED."item_code",
+  "status" = EXCLUDED."status",
   "long_fw" = EXCLUDED."long_fw",
   "target_device_name" = EXCLUDED."target_device_name",
   "activation" = EXCLUDED."activation",
@@ -208,6 +267,28 @@ ON CONFLICT ("simu_id") DO UPDATE SET
   "f_port" = EXCLUDED."f_port",
   "preset_id" = EXCLUDED."preset_id",
   "flow_duration_minutes" = EXCLUDED."flow_duration_minutes",
+  "timed_actions" = EXCLUDED."timed_actions",
+  "updated_at" = CURRENT_TIMESTAMP;
+
+-- Also register template devices in devices.devices / system_schema.devices if table exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'devices' AND table_name = 'devices') THEN
+    INSERT INTO devices.devices (serial_number, network_id, device_name, device_type, plugin_id, so_number, wa_number, item_code, status, metadata)
+    VALUES
+      ('SN-TMPL-SP01', '70B3D57ED005ABCD', 'Smart Socket Multi-Sensor Node', 'lorawan_node', 'testing', 'SO-2025-9901', 'WA-2025-9901', 'ITEM-9901-SMART-PLUG', 'template', '{"simu_id": "SIMU-LORA-SP01", "long_fw": "v1.2.0-rc3-long-fw-build9482", "is_template": true}'::jsonb),
+      ('SN-TMPL-WM02', '70B3D57ED0052211', 'Water Meter Ultrasonic DN15', 'lorawan_node', 'testing', 'SO-2025-5520', 'WA-2025-5520', 'ITEM-5520-WATER-METER', 'template', '{"simu_id": "SIMU-LORA-WM02", "long_fw": "v2.4.1-long-fw-build1029", "is_template": true}'::jsonb),
+      ('SN-TMPL-ENV03', '70B3D57ED0059988', 'Gas & Smoke Industrial Node', 'lorawan_node', 'testing', 'SO-2025-8812', 'WA-2025-8812', 'ITEM-8812-ENV-SENSOR', 'template', '{"simu_id": "SIMU-LORA-ENV03", "long_fw": "v1.0.5-long-fw-build3311", "is_template": true}'::jsonb)
+    ON CONFLICT (serial_number) DO UPDATE SET
+      network_id = EXCLUDED.network_id,
+      device_name = EXCLUDED.device_name,
+      device_type = EXCLUDED.device_type,
+      item_code = EXCLUDED.item_code,
+      status = EXCLUDED.status,
+      metadata = EXCLUDED.metadata,
+      updated_at = CURRENT_TIMESTAMP;
+  END IF;
+END $$;
   "timed_actions" = EXCLUDED."timed_actions",
   "updated_at" = CURRENT_TIMESTAMP;
 
