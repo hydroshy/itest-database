@@ -32,6 +32,7 @@ const requiredFiles = [
   'schemas/system/migrations/006_add_gateway_testing_and_device_plugin_menus.sql',
   'schemas/system/migrations/007_create_simulation_profiles_and_runs.sql',
   'schemas/system/migrations/008_extend_simulation_profiles_for_block_flow.sql',
+  'schemas/system/migrations/009_create_device_test_sessions_and_menu.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
@@ -423,5 +424,18 @@ assert.ok(updatedSystemSchemaSql.includes('"sku" VARCHAR(100)'), 'Missing sku in
 assert.ok(updatedSystemSchemaSql.includes('"flow_blocks" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing flow_blocks in system/schema.sql');
 assert.ok(updatedSystemSchemaSql.includes('idx_simu_profiles_sku_long_fw'), 'Missing idx_simu_profiles_sku_long_fw in system/schema.sql');
 console.log('✓ System migration 008 and system/schema.sql block flow fields validated');
+
+// 21. Validate System Migration 009 and system/schema.sql for Create Device Testing
+const systemMigration009Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/009_create_device_test_sessions_and_menu.sql'), 'utf8');
+assert.ok(systemMigration009Sql.includes('CREATE TABLE IF NOT EXISTS system_schema."device_test_sessions"'), 'Missing device_test_sessions table in migration 009');
+assert.ok(systemMigration009Sql.includes('"session_code" VARCHAR(100) NOT NULL UNIQUE'), 'Missing session_code in migration 009');
+assert.ok(systemMigration009Sql.includes('testing:create-device-testing'), 'Missing menu item testing:create-device-testing in migration 009');
+assert.ok(systemMigration009Sql.includes('menu:testing-create-device:view'), 'Missing permission in migration 009');
+assert.ok(systemMigration009Sql.includes('v_device_test_sessions'), 'Missing v_device_test_sessions view in migration 009');
+
+assert.ok(updatedSystemSchemaSql.includes('CREATE TABLE IF NOT EXISTS system_schema."device_test_sessions"'), 'Missing device_test_sessions in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('"session_code" VARCHAR(100) NOT NULL UNIQUE'), 'Missing session_code in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('v_device_test_sessions'), 'Missing v_device_test_sessions view in system/schema.sql');
+console.log('✓ System migration 009 and system/schema.sql device test sessions validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

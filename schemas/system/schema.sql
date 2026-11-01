@@ -527,6 +527,52 @@ CREATE INDEX IF NOT EXISTS "idx_simu_runs_item_code" ON system_schema."simulatio
 CREATE INDEX IF NOT EXISTS "idx_simu_runs_status" ON system_schema."simulation_runs"("status");
 CREATE INDEX IF NOT EXISTS "idx_simu_runs_started_at" ON system_schema."simulation_runs"("started_at" DESC);
 
+-- 14. Device Test Sessions Table (Create Device Testing in Testing Plugin)
+CREATE TABLE IF NOT EXISTS system_schema."device_test_sessions" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "session_code" VARCHAR(100) NOT NULL UNIQUE,
+  "device_id" UUID,
+  "serial_number" VARCHAR(100),
+  "dev_eui" VARCHAR(64),
+  "device_name" VARCHAR(255),
+  "item_code" VARCHAR(100),
+  "sku" VARCHAR(100),
+  "connectivity" VARCHAR(50) NOT NULL DEFAULT 'LoRaWAN',
+  "simu_id" VARCHAR(100),
+  "flow_config" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "auto_check_criteria" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "evaluation_result" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "status" VARCHAR(50) NOT NULL DEFAULT 'IDLE',
+  "verdict" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  "packets_received" INTEGER NOT NULL DEFAULT 0,
+  "rules_passed" INTEGER NOT NULL DEFAULT 0,
+  "rules_failed" INTEGER NOT NULL DEFAULT 0,
+  "duration_seconds" INTEGER NOT NULL DEFAULT 0,
+  "logs" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "tested_by" VARCHAR(100) NOT NULL DEFAULT 'operator',
+  "started_at" TIMESTAMPTZ,
+  "finished_at" TIMESTAMPTZ,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_serial_number" ON system_schema."device_test_sessions"("serial_number");
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_dev_eui" ON system_schema."device_test_sessions"("dev_eui");
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_item_code" ON system_schema."device_test_sessions"("item_code");
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_sku" ON system_schema."device_test_sessions"("sku");
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_simu_id" ON system_schema."device_test_sessions"("simu_id");
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_status" ON system_schema."device_test_sessions"("status");
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_verdict" ON system_schema."device_test_sessions"("verdict");
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_started_at" ON system_schema."device_test_sessions"("started_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_created_at" ON system_schema."device_test_sessions"("created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_flow_config_gin" ON system_schema."device_test_sessions" USING GIN ("flow_config");
+CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_auto_check_gin" ON system_schema."device_test_sessions" USING GIN ("auto_check_criteria");
+
+CREATE OR REPLACE VIEW system_schema.v_device_test_sessions AS
+SELECT * FROM system_schema."device_test_sessions";
+
+
 
 
 
