@@ -289,8 +289,6 @@ BEGIN
       updated_at = CURRENT_TIMESTAMP;
   END IF;
 END $$;
-  "timed_actions" = EXCLUDED."timed_actions",
-  "updated_at" = CURRENT_TIMESTAMP;
 
 -- 4. Runtime Grants to Roles
 DO $$

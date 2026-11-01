@@ -455,4 +455,73 @@ FROM system_schema."devices" d
 LEFT JOIN traceability_manager."traceability_so" so ON d."so_id" = so."id" OR d."so_number" = so."so_number"
 LEFT JOIN traceability_manager."traceability_wa" wa ON d."wa_id" = wa."id" OR d."wa_number" = wa."wa_number";
 
+-- 12. Simulation Profiles Table
+CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "simu_id" VARCHAR(100) NOT NULL UNIQUE,
+  "profile_name" VARCHAR(255) NOT NULL,
+  "serial_number" VARCHAR(100),
+  "network_id" VARCHAR(100),
+  "device_name" VARCHAR(255) NOT NULL,
+  "device_type" VARCHAR(100) NOT NULL DEFAULT 'lorawan_node',
+  "plugin_id" VARCHAR(100) NOT NULL DEFAULT 'testing',
+  "so_number" VARCHAR(100),
+  "wa_number" VARCHAR(100),
+  "item_code" VARCHAR(100) NOT NULL,
+  "status" VARCHAR(50) NOT NULL DEFAULT 'template',
+  "long_fw" VARCHAR(255) NOT NULL,
+  "target_device_name" VARCHAR(255),
+  "activation" VARCHAR(20) NOT NULL DEFAULT 'OTAA',
+  "dev_eui" VARCHAR(64),
+  "app_eui" VARCHAR(64) DEFAULT '0000000000000000',
+  "app_key" VARCHAR(64),
+  "dev_addr" VARCHAR(64),
+  "region" VARCHAR(50) NOT NULL DEFAULT 'AS923-1',
+  "sf" VARCHAR(20) NOT NULL DEFAULT 'SF7',
+  "bw" INTEGER NOT NULL DEFAULT 125,
+  "f_port" INTEGER NOT NULL DEFAULT 10,
+  "preset_id" VARCHAR(50) NOT NULL DEFAULT 'env',
+  "flow_duration_minutes" INTEGER NOT NULL DEFAULT 30,
+  "auto_terminate" BOOLEAN NOT NULL DEFAULT TRUE,
+  "uplink_interval_sec" INTEGER NOT NULL DEFAULT 10,
+  "timed_actions" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "created_by" VARCHAR(100) NOT NULL DEFAULT 'admin',
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_simu_id" ON system_schema."simulation_profiles"("simu_id");
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_item_code" ON system_schema."simulation_profiles"("item_code");
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_long_fw" ON system_schema."simulation_profiles"("long_fw");
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_timed_actions_gin" ON system_schema."simulation_profiles" USING GIN ("timed_actions");
+
+-- 13. Simulation Runs Table
+CREATE TABLE IF NOT EXISTS system_schema."simulation_runs" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "simu_id" VARCHAR(100) NOT NULL REFERENCES system_schema."simulation_profiles"("simu_id") ON DELETE CASCADE,
+  "device_id" UUID REFERENCES system_schema."devices"("id") ON DELETE SET NULL,
+  "item_code" VARCHAR(100) NOT NULL,
+  "long_fw" VARCHAR(255) NOT NULL,
+  "status" VARCHAR(50) NOT NULL DEFAULT 'running',
+  "duration_seconds" INTEGER NOT NULL DEFAULT 1800,
+  "elapsed_seconds" INTEGER NOT NULL DEFAULT 0,
+  "speed_multiplier" INTEGER NOT NULL DEFAULT 1,
+  "total_uplinks" INTEGER NOT NULL DEFAULT 0,
+  "total_downlinks" INTEGER NOT NULL DEFAULT 0,
+  "actuator_events" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "logs" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "started_by" VARCHAR(100) NOT NULL DEFAULT 'sub_admin',
+  "started_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "finished_at" TIMESTAMPTZ,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "idx_simu_runs_simu_id" ON system_schema."simulation_runs"("simu_id");
+CREATE INDEX IF NOT EXISTS "idx_simu_runs_item_code" ON system_schema."simulation_runs"("item_code");
+CREATE INDEX IF NOT EXISTS "idx_simu_runs_status" ON system_schema."simulation_runs"("status");
+CREATE INDEX IF NOT EXISTS "idx_simu_runs_started_at" ON system_schema."simulation_runs"("started_at" DESC);
+
+
+
 

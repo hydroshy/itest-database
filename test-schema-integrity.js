@@ -30,6 +30,7 @@ const requiredFiles = [
   'schemas/system/migrations/004_create_system_menu_compat_views.sql',
   'schemas/system/migrations/005_create_testing_devices_and_packets_tables.sql',
   'schemas/system/migrations/006_add_gateway_testing_and_device_plugin_menus.sql',
+  'schemas/system/migrations/007_create_simulation_profiles_and_runs.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
@@ -381,5 +382,30 @@ assert.ok(devicesSchemaSql.includes('serial_number VARCHAR(100)'), 'Missing seri
 assert.ok(devicesSchemaSql.includes('gateway_ip VARCHAR(45)'), 'Missing gateway_ip in devices/schema.sql gateway_test_sessions');
 assert.ok(devicesSchemaSql.includes('idx_devices_gw_sessions_serial_number'), 'Missing idx_devices_gw_sessions_serial_number in devices/schema.sql');
 console.log('✓ Devices migration 005 and devices/schema.sql gateway metadata validated');
+
+// 19. Validate System Migration 007 and system/schema.sql for Simulation Profiles and Runs
+const systemMigration007Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/007_create_simulation_profiles_and_runs.sql'), 'utf8');
+assert.ok(systemMigration007Sql.includes('CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles"'), 'Missing simulation_profiles table in system migration 007');
+assert.ok(systemMigration007Sql.includes('"simu_id" VARCHAR(100) NOT NULL UNIQUE'), 'Missing simu_id in simulation_profiles');
+assert.ok(systemMigration007Sql.includes('"item_code" VARCHAR(100) NOT NULL'), 'Missing item_code in simulation_profiles');
+assert.ok(systemMigration007Sql.includes('"long_fw" VARCHAR(255) NOT NULL'), 'Missing long_fw in simulation_profiles');
+assert.ok(systemMigration007Sql.includes('"f_port" INTEGER NOT NULL DEFAULT 10'), 'Missing f_port in simulation_profiles');
+assert.ok(systemMigration007Sql.includes('"preset_id" VARCHAR(50) NOT NULL DEFAULT \'env\''), 'Missing preset_id in simulation_profiles');
+assert.ok(systemMigration007Sql.includes('"flow_duration_minutes" INTEGER NOT NULL DEFAULT 30'), 'Missing flow_duration_minutes in simulation_profiles');
+assert.ok(systemMigration007Sql.includes('"timed_actions" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing timed_actions in simulation_profiles');
+
+assert.ok(systemMigration007Sql.includes('CREATE TABLE IF NOT EXISTS system_schema."simulation_runs"'), 'Missing simulation_runs table in system migration 007');
+assert.ok(systemMigration007Sql.includes('"simu_id" VARCHAR(100) NOT NULL REFERENCES system_schema."simulation_profiles"("simu_id")'), 'Missing simu_id FK in simulation_runs');
+assert.ok(systemMigration007Sql.includes('"duration_seconds" INTEGER NOT NULL DEFAULT 1800'), 'Missing duration_seconds in simulation_runs');
+assert.ok(systemMigration007Sql.includes('"actuator_events" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing actuator_events in simulation_runs');
+assert.ok(systemMigration007Sql.includes('"logs" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing logs in simulation_runs');
+
+// Check system/schema.sql has simulation tables
+const updatedSystemSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
+assert.ok(updatedSystemSchemaSql.includes('CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles"'), 'Missing simulation_profiles in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('CREATE TABLE IF NOT EXISTS system_schema."simulation_runs"'), 'Missing simulation_runs in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('"timed_actions" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing timed_actions in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('"actuator_events" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing actuator_events in system/schema.sql');
+console.log('✓ System migration 007 and system/schema.sql simulation tables validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
