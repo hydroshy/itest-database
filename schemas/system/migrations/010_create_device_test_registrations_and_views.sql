@@ -152,15 +152,12 @@ SELECT
   so."so_number",
   so."customer_name",
   so."partner_email",
-  so."status" AS "so_status",
   wa."id" AS "wa_id",
   wa."wa_number",
   wa."item_code",
-  wa."status" AS "wa_status",
   wa."planned_quantity"
 FROM traceability_manager."traceability_so" so
 JOIN traceability_manager."traceability_wa" wa ON so."id" = wa."so_id"
-WHERE so."status" NOT IN ('CANCELLED', 'cancelled')
 ORDER BY so."created_at" DESC;
 
 -- 4. Runtime Grants
