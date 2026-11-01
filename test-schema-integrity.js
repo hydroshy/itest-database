@@ -31,6 +31,7 @@ const requiredFiles = [
   'schemas/system/migrations/005_create_testing_devices_and_packets_tables.sql',
   'schemas/system/migrations/006_add_gateway_testing_and_device_plugin_menus.sql',
   'schemas/system/migrations/007_create_simulation_profiles_and_runs.sql',
+  'schemas/system/migrations/008_extend_simulation_profiles_for_block_flow.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
@@ -407,5 +408,20 @@ assert.ok(updatedSystemSchemaSql.includes('CREATE TABLE IF NOT EXISTS system_sch
 assert.ok(updatedSystemSchemaSql.includes('"timed_actions" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing timed_actions in system/schema.sql');
 assert.ok(updatedSystemSchemaSql.includes('"actuator_events" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing actuator_events in system/schema.sql');
 console.log('✓ System migration 007 and system/schema.sql simulation tables validated');
+
+// 20. Validate System Migration 008 and system/schema.sql for Simulation Block Flow
+const systemMigration008Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/008_extend_simulation_profiles_for_block_flow.sql'), 'utf8');
+assert.ok(systemMigration008Sql.includes('ADD COLUMN IF NOT EXISTS "sensor_connectivity" VARCHAR(100) NOT NULL DEFAULT \'LoRaWAN\''), 'Missing sensor_connectivity column');
+assert.ok(systemMigration008Sql.includes('ADD COLUMN IF NOT EXISTS "sku" VARCHAR(100)'), 'Missing sku column');
+assert.ok(systemMigration008Sql.includes('ADD COLUMN IF NOT EXISTS "flow_blocks" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing flow_blocks column');
+assert.ok(systemMigration008Sql.includes('idx_simu_profiles_sku_long_fw'), 'Missing idx_simu_profiles_sku_long_fw index');
+assert.ok(systemMigration008Sql.includes('v_simulation_devices'), 'Missing v_simulation_devices view');
+assert.ok(systemMigration008Sql.includes("WHERE d.\"status\" IN ('simulation', 'template')"), 'Missing status filter in view');
+
+assert.ok(updatedSystemSchemaSql.includes('"sensor_connectivity" VARCHAR(100) NOT NULL DEFAULT \'LoRaWAN\''), 'Missing sensor_connectivity in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('"sku" VARCHAR(100)'), 'Missing sku in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('"flow_blocks" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing flow_blocks in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('idx_simu_profiles_sku_long_fw'), 'Missing idx_simu_profiles_sku_long_fw in system/schema.sql');
+console.log('✓ System migration 008 and system/schema.sql block flow fields validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

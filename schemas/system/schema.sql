@@ -468,6 +468,8 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "so_number" VARCHAR(100),
   "wa_number" VARCHAR(100),
   "item_code" VARCHAR(100) NOT NULL,
+  "sku" VARCHAR(100),
+  "sensor_connectivity" VARCHAR(100) NOT NULL DEFAULT 'LoRaWAN',
   "status" VARCHAR(50) NOT NULL DEFAULT 'template',
   "long_fw" VARCHAR(255) NOT NULL,
   "target_device_name" VARCHAR(255),
@@ -485,6 +487,7 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "auto_terminate" BOOLEAN NOT NULL DEFAULT TRUE,
   "uplink_interval_sec" INTEGER NOT NULL DEFAULT 10,
   "timed_actions" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "flow_blocks" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "created_by" VARCHAR(100) NOT NULL DEFAULT 'admin',
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -493,8 +496,10 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
 
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_simu_id" ON system_schema."simulation_profiles"("simu_id");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_item_code" ON system_schema."simulation_profiles"("item_code");
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_sku_long_fw" ON system_schema."simulation_profiles"("sku", "long_fw");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_long_fw" ON system_schema."simulation_profiles"("long_fw");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_timed_actions_gin" ON system_schema."simulation_profiles" USING GIN ("timed_actions");
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_flow_blocks_gin" ON system_schema."simulation_profiles" USING GIN ("flow_blocks");
 
 -- 13. Simulation Runs Table
 CREATE TABLE IF NOT EXISTS system_schema."simulation_runs" (
