@@ -33,6 +33,7 @@ const requiredFiles = [
   'schemas/system/migrations/007_create_simulation_profiles_and_runs.sql',
   'schemas/system/migrations/008_extend_simulation_profiles_for_block_flow.sql',
   'schemas/system/migrations/009_create_device_test_sessions_and_menu.sql',
+  'schemas/system/migrations/010_create_device_test_registrations_and_views.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
@@ -437,5 +438,24 @@ assert.ok(updatedSystemSchemaSql.includes('CREATE TABLE IF NOT EXISTS system_sch
 assert.ok(updatedSystemSchemaSql.includes('"session_code" VARCHAR(100) NOT NULL UNIQUE'), 'Missing session_code in system/schema.sql');
 assert.ok(updatedSystemSchemaSql.includes('v_device_test_sessions'), 'Missing v_device_test_sessions view in system/schema.sql');
 console.log('✓ System migration 009 and system/schema.sql device test sessions validated');
+
+// 22. Validate System Migration 010 and system/schema.sql for 3-Step Device Test Registrations
+const systemMigration010Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/010_create_device_test_registrations_and_views.sql'), 'utf8');
+assert.ok(systemMigration010Sql.includes('CREATE TABLE IF NOT EXISTS system_schema."device_test_registrations"'), 'Missing device_test_registrations table in migration 010');
+assert.ok(systemMigration010Sql.includes('"registration_code" VARCHAR(100) NOT NULL UNIQUE'), 'Missing registration_code in migration 010');
+assert.ok(systemMigration010Sql.includes('"connectivity" VARCHAR(50) NOT NULL DEFAULT \'LoRaWAN\''), 'Missing connectivity in migration 010');
+assert.ok(systemMigration010Sql.includes('"fw_code" VARCHAR(50)'), 'Missing fw_code in migration 010');
+assert.ok(systemMigration010Sql.includes('"fw_version" VARCHAR(50)'), 'Missing fw_version in migration 010');
+assert.ok(systemMigration010Sql.includes('"dev_eui" VARCHAR(64)'), 'Missing dev_eui in migration 010');
+assert.ok(systemMigration010Sql.includes('"app_eui" VARCHAR(64)'), 'Missing app_eui in migration 010');
+assert.ok(systemMigration010Sql.includes('"app_key" VARCHAR(64)'), 'Missing app_key in migration 010');
+assert.ok(systemMigration010Sql.includes('"serial_number" VARCHAR(100)'), 'Missing serial_number in migration 010');
+assert.ok(systemMigration010Sql.includes('v_device_test_registrations_detail'), 'Missing v_device_test_registrations_detail view in migration 010');
+assert.ok(systemMigration010Sql.includes('v_testing_active_traceability'), 'Missing v_testing_active_traceability view in migration 010');
+
+assert.ok(updatedSystemSchemaSql.includes('CREATE TABLE IF NOT EXISTS system_schema."device_test_registrations"'), 'Missing device_test_registrations in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('"registration_code" VARCHAR(100) NOT NULL UNIQUE'), 'Missing registration_code in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('v_device_test_registrations_detail'), 'Missing v_device_test_registrations_detail view in system/schema.sql');
+console.log('✓ System migration 010 and system/schema.sql 3-step registration flow validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

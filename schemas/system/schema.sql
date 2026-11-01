@@ -572,6 +572,60 @@ CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_auto_check_gin" ON system_schema.
 CREATE OR REPLACE VIEW system_schema.v_device_test_sessions AS
 SELECT * FROM system_schema."device_test_sessions";
 
+-- 15. Device Test Registrations Table (3-Step Registration Flow: LoRaWAN SO/WA -> Serial Fast Read 0..259 -> ChirpStack Provisioning)
+CREATE TABLE IF NOT EXISTS system_schema."device_test_registrations" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "registration_code" VARCHAR(100) NOT NULL UNIQUE,
+  "connectivity" VARCHAR(50) NOT NULL DEFAULT 'LoRaWAN',
+  "so_id" UUID,
+  "so_number" VARCHAR(100),
+  "wa_id" UUID,
+  "wa_number" VARCHAR(100),
+  "item_code" VARCHAR(100),
+  "network_server_id" UUID,
+  "network_server_name" VARCHAR(100),
+  "network_server_url" VARCHAR(255),
+  "serial_port" VARCHAR(50),
+  "baud_rate" INTEGER NOT NULL DEFAULT 9600,
+  "fw_code" VARCHAR(50),
+  "fw_version" VARCHAR(50),
+  "hw_version" VARCHAR(50),
+  "me_version" VARCHAR(50),
+  "dev_eui" VARCHAR(64),
+  "app_eui" VARCHAR(64),
+  "app_key" VARCHAR(64),
+  "region_code" VARCHAR(50),
+  "class_mode" VARCHAR(20),
+  "sensor_type" VARCHAR(50),
+  "serial_number" VARCHAR(100),
+  "device_name" VARCHAR(255),
+  "raw_registers_snapshot" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "application_id" VARCHAR(100),
+  "device_profile_id" VARCHAR(100),
+  "chirpstack_payload" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "step" INTEGER NOT NULL DEFAULT 1,
+  "status" VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+  "message" TEXT,
+  "error_detail" TEXT,
+  "device_id" UUID,
+  "created_by" VARCHAR(100) NOT NULL DEFAULT 'tester',
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_dev_eui" ON system_schema."device_test_registrations"("dev_eui");
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_serial_number" ON system_schema."device_test_registrations"("serial_number");
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_so_number" ON system_schema."device_test_registrations"("so_number");
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_wa_number" ON system_schema."device_test_registrations"("wa_number");
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_item_code" ON system_schema."device_test_registrations"("item_code");
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_status" ON system_schema."device_test_registrations"("status");
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_created_at" ON system_schema."device_test_registrations"("created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_registers_gin" ON system_schema."device_test_registrations" USING GIN ("raw_registers_snapshot");
+
+CREATE OR REPLACE VIEW system_schema.v_device_test_registrations_detail AS
+SELECT * FROM system_schema."device_test_registrations";
+
+
 
 
 
