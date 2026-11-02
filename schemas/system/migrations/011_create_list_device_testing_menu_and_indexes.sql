@@ -67,9 +67,23 @@ ON CONFLICT ("name") DO UPDATE SET
   "action" = EXCLUDED."action";
 
 -- 4. Assign Role Permissions
+-- Ensure roleCode allows NULL if legacy constraint exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'system_schema'
+      AND table_name = 'role_menu_permissions'
+      AND column_name = 'roleCode'
+      AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE system_schema."role_menu_permissions" ALTER COLUMN "roleCode" DROP NOT NULL;
+  END IF;
+END $$;
+
 -- ADMIN: Full view and manage/delete
-INSERT INTO system_schema."role_menu_permissions" ("roleId", "menuItemId")
-SELECT r."id", m."id"
+INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
+SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
 WHERE r."code" IN ('ADMIN', 'admin')
@@ -77,8 +91,8 @@ WHERE r."code" IN ('ADMIN', 'admin')
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 -- OPERATOR, TESTER, QA_ENGINEER: View and delete own devices
-INSERT INTO system_schema."role_menu_permissions" ("roleId", "menuItemId")
-SELECT r."id", m."id"
+INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
+SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
 WHERE r."code" IN ('OPERATOR', 'operator', 'TESTER', 'tester', 'QA_ENGINEER', 'qa_engineer', 'TECHNICIAN', 'technician')

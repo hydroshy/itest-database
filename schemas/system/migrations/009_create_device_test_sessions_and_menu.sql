@@ -118,8 +118,8 @@ ON CONFLICT ("name") DO UPDATE SET
 
 -- 4. Assign Role Permissions
 -- ADMIN
-INSERT INTO system_schema."role_menu_permissions" ("roleId", "menuItemId")
-SELECT r."id", m."id"
+INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
+SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
 WHERE r."code" IN ('ADMIN', 'admin')
@@ -127,8 +127,8 @@ WHERE r."code" IN ('ADMIN', 'admin')
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 -- OPERATOR
-INSERT INTO system_schema."role_menu_permissions" ("roleId", "menuItemId")
-SELECT r."id", m."id"
+INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
+SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
 WHERE r."code" IN ('OPERATOR', 'operator', 'TESTER', 'tester', 'QA_ENGINEER', 'qa_engineer')

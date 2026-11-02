@@ -255,9 +255,9 @@ CREATE INDEX IF NOT EXISTS "idx_menu_items_order" ON system_schema."menu_items"(
 -- 3. Create role_menu_permissions Table
 CREATE TABLE IF NOT EXISTS system_schema."role_menu_permissions" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "roleId" UUID NOT NULL REFERENCES system_schema."roles"("id") ON DELETE CASCADE,
+  "roleId" UUID REFERENCES system_schema."roles"("id") ON DELETE CASCADE,
   "role_id" UUID,
-  "roleCode" VARCHAR(100) NOT NULL,
+  "roleCode" VARCHAR(100),
   "role_code" VARCHAR(100),
   "menuItemId" VARCHAR(128) NOT NULL REFERENCES system_schema."menu_items"("id") ON DELETE CASCADE,
   "menu_item_id" VARCHAR(128),
@@ -269,19 +269,46 @@ CREATE TABLE IF NOT EXISTS system_schema."role_menu_permissions" (
 -- Trigger function to keep role_menu_permissions columns in sync
 CREATE OR REPLACE FUNCTION system_schema.sync_role_menu_permissions_columns()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_role_id UUID;
+  v_role_code VARCHAR(100);
 BEGIN
-  IF NEW."roleId" IS NOT NULL AND NEW."role_id" IS NULL THEN
-    NEW."role_id" := NEW."roleId";
-  ELSIF NEW."role_id" IS NOT NULL AND NEW."roleId" IS NULL THEN
-    NEW."roleId" := NEW."role_id";
-  END IF;
-
+  -- Sync roleCode <-> role_code
   IF NEW."roleCode" IS NOT NULL AND NEW."role_code" IS NULL THEN
     NEW."role_code" := NEW."roleCode";
   ELSIF NEW."role_code" IS NOT NULL AND NEW."roleCode" IS NULL THEN
     NEW."roleCode" := NEW."role_code";
   END IF;
 
+  -- Auto-lookup roleId if only role_code / roleCode provided
+  IF NEW."roleId" IS NULL AND (NEW."role_code" IS NOT NULL OR NEW."roleCode" IS NOT NULL) THEN
+    SELECT id INTO v_role_id FROM system_schema."roles"
+    WHERE UPPER("code") = UPPER(COALESCE(NEW."role_code", NEW."roleCode"))
+    LIMIT 1;
+
+    IF v_role_id IS NOT NULL THEN
+      NEW."roleId" := v_role_id;
+      NEW."role_id" := v_role_id;
+    END IF;
+  ELSIF NEW."roleId" IS NOT NULL AND NEW."role_id" IS NULL THEN
+    NEW."role_id" := NEW."roleId";
+  ELSIF NEW."role_id" IS NOT NULL AND NEW."roleId" IS NULL THEN
+    NEW."roleId" := NEW."role_id";
+  END IF;
+
+  -- Auto-lookup roleCode if only roleId / role_id provided
+  IF (NEW."roleCode" IS NULL AND NEW."role_code" IS NULL) AND (NEW."roleId" IS NOT NULL OR NEW."role_id" IS NOT NULL) THEN
+    SELECT "code" INTO v_role_code FROM system_schema."roles"
+    WHERE "id" = COALESCE(NEW."roleId", NEW."role_id")
+    LIMIT 1;
+
+    IF v_role_code IS NOT NULL THEN
+      NEW."roleCode" := v_role_code;
+      NEW."role_code" := v_role_code;
+    END IF;
+  END IF;
+
+  -- Sync menuItemId <-> menu_item_id
   IF NEW."menuItemId" IS NOT NULL AND NEW."menu_item_id" IS NULL THEN
     NEW."menu_item_id" := NEW."menuItemId";
   ELSIF NEW."menu_item_id" IS NOT NULL AND NEW."menuItemId" IS NULL THEN

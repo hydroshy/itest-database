@@ -12,7 +12,7 @@
 -- Idempotency: Safe to re-run on existing PostgreSQL volumes.
 -- ==============================================================================
 
--- 1. Relax NOT NULL on roleId in system_schema.role_menu_permissions if present
+-- 1. Relax NOT NULL on roleId and roleCode in system_schema.role_menu_permissions if present
 DO $$
 BEGIN
   IF EXISTS (
@@ -24,6 +24,16 @@ BEGIN
   ) THEN
     ALTER TABLE system_schema."role_menu_permissions" ALTER COLUMN "roleId" DROP NOT NULL;
   END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'system_schema' 
+      AND table_name = 'role_menu_permissions' 
+      AND column_name = 'roleCode' 
+      AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE system_schema."role_menu_permissions" ALTER COLUMN "roleCode" DROP NOT NULL;
+  END IF;
 END $$;
 
 -- 2. Enhanced Trigger function for role_menu_permissions to resolve roleId from role_code
@@ -31,6 +41,7 @@ CREATE OR REPLACE FUNCTION system_schema.sync_role_menu_permissions_columns()
 RETURNS TRIGGER AS $$
 DECLARE
   v_role_id UUID;
+  v_role_code VARCHAR(100);
 BEGIN
   -- Sync roleCode <-> role_code
   IF NEW."roleCode" IS NOT NULL AND NEW."role_code" IS NULL THEN
@@ -53,6 +64,18 @@ BEGIN
     NEW."role_id" := NEW."roleId";
   ELSIF NEW."role_id" IS NOT NULL AND NEW."roleId" IS NULL THEN
     NEW."roleId" := NEW."role_id";
+  END IF;
+
+  -- Auto-lookup roleCode if only roleId / role_id provided
+  IF (NEW."roleCode" IS NULL AND NEW."role_code" IS NULL) AND (NEW."roleId" IS NOT NULL OR NEW."role_id" IS NOT NULL) THEN
+    SELECT "code" INTO v_role_code FROM system_schema."roles"
+    WHERE "id" = COALESCE(NEW."roleId", NEW."role_id")
+    LIMIT 1;
+
+    IF v_role_code IS NOT NULL THEN
+      NEW."roleCode" := v_role_code;
+      NEW."role_code" := v_role_code;
+    END IF;
   END IF;
 
   -- Sync menuItemId <-> menu_item_id
