@@ -34,6 +34,7 @@ const requiredFiles = [
   'schemas/system/migrations/008_extend_simulation_profiles_for_block_flow.sql',
   'schemas/system/migrations/009_create_device_test_sessions_and_menu.sql',
   'schemas/system/migrations/010_create_device_test_registrations_and_views.sql',
+  'schemas/system/migrations/011_create_list_device_testing_menu_and_indexes.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
@@ -467,5 +468,13 @@ assert.ok(lorawanMigration005Sql.includes('idx_lorawan_cs_network_servers_app_id
 assert.ok(lorawanMigration005Sql.includes('idx_lorawan_cs_network_servers_dev_profile_id'), 'Missing dev_profile_id index in lorawan migration 005');
 assert.ok(lorawanSchemaSql.includes('005_add_app_and_device_profile_to_network_servers.sql'), 'Missing migration 005 in lorawan-chirpstack/schema.sql');
 console.log('✓ LoRaWAN ChirpStack migration 005 for Application ID and Device Profile ID validated');
+
+// 24. Validate System Migration 011 for List Device Testing Menu, Indexes and View
+const systemMigration011Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/011_create_list_device_testing_menu_and_indexes.sql'), 'utf8');
+assert.ok(systemMigration011Sql.includes('testing:list-device-testing'), 'Missing testing:list-device-testing menu item in migration 011');
+assert.ok(systemMigration011Sql.includes('idx_dtest_reg_user_app'), 'Missing idx_dtest_reg_user_app in migration 011');
+assert.ok(systemMigration011Sql.includes('v_list_device_testing'), 'Missing v_list_device_testing view in migration 011');
+assert.ok(updatedSystemSchemaSql.includes('v_list_device_testing'), 'Missing v_list_device_testing in system/schema.sql');
+console.log('✓ System migration 011 and system/schema.sql list device testing validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

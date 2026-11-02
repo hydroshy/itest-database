@@ -625,6 +625,56 @@ CREATE INDEX IF NOT EXISTS "idx_dtest_reg_registers_gin" ON system_schema."devic
 CREATE OR REPLACE VIEW system_schema.v_device_test_registrations_detail AS
 SELECT * FROM system_schema."device_test_registrations";
 
+-- 011: List Device Testing indexes and view
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_app_id"
+  ON system_schema."device_test_registrations" ("application_id");
+
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_created_by"
+  ON system_schema."device_test_registrations" ("created_by");
+
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_user_app"
+  ON system_schema."device_test_registrations" ("created_by", "application_id", "created_at" DESC);
+
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_admin_app"
+  ON system_schema."device_test_registrations" ("application_id", "created_at" DESC);
+
+CREATE OR REPLACE VIEW system_schema.v_list_device_testing AS
+SELECT
+  r."id",
+  r."registration_code",
+  r."serial_number",
+  r."item_code",
+  r."fw_version",
+  r."hw_version",
+  r."fw_code",
+  r."me_version",
+  r."dev_eui",
+  r."app_eui",
+  r."app_key",
+  r."class_mode",
+  COALESCE(r."class_mode", 'A') AS "class",
+  r."region_code",
+  COALESCE(r."region_code", 'AS923-1') AS "region",
+  r."sensor_type",
+  r."created_by",
+  COALESCE(r."application_id", ns."application_id") AS "application_id",
+  COALESCE(r."device_profile_id", ns."device_profile_id") AS "device_profile_id",
+  r."network_server_id",
+  COALESCE(ns."name", r."network_server_name") AS "network_server_name",
+  COALESCE(ns."api_url", r."network_server_url") AS "network_server_url",
+  r."connectivity",
+  r."so_number",
+  r."wa_number",
+  r."status",
+  r."message",
+  r."error_detail",
+  r."created_at",
+  r."updated_at"
+FROM system_schema."device_test_registrations" r
+LEFT JOIN lorawan_chirpstack."network_servers" ns
+  ON (r."network_server_id" = ns."id");
+
+
 
 
 
