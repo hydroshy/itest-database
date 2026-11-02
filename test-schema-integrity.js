@@ -46,6 +46,7 @@ const requiredFiles = [
   'schemas/devices/migrations/004_update_device_plugin_id_default_to_device.sql',
   'schemas/devices/migrations/005_extend_gateway_test_sessions_metadata.sql',
   'schemas/lorawan-chirpstack/migrations/004_extend_gateway_test_sessions_metadata.sql',
+  'schemas/lorawan-chirpstack/migrations/005_add_app_and_device_profile_to_network_servers.sql',
   'scripts/migrate.js'
 ];
 
@@ -457,5 +458,14 @@ assert.ok(updatedSystemSchemaSql.includes('CREATE TABLE IF NOT EXISTS system_sch
 assert.ok(updatedSystemSchemaSql.includes('"registration_code" VARCHAR(100) NOT NULL UNIQUE'), 'Missing registration_code in system/schema.sql');
 assert.ok(updatedSystemSchemaSql.includes('v_device_test_registrations_detail'), 'Missing v_device_test_registrations_detail view in system/schema.sql');
 console.log('✓ System migration 010 and system/schema.sql 3-step registration flow validated');
+
+// 23. Validate LoRaWAN ChirpStack Migration 005 for Application ID & Device Profile ID
+const lorawanMigration005Sql = fs.readFileSync(path.join(__dirname, 'schemas/lorawan-chirpstack/migrations/005_add_app_and_device_profile_to_network_servers.sql'), 'utf8');
+assert.ok(lorawanMigration005Sql.includes('ADD COLUMN IF NOT EXISTS "application_id" VARCHAR(100)'), 'Missing application_id in lorawan migration 005');
+assert.ok(lorawanMigration005Sql.includes('ADD COLUMN IF NOT EXISTS "device_profile_id" VARCHAR(100)'), 'Missing device_profile_id in lorawan migration 005');
+assert.ok(lorawanMigration005Sql.includes('idx_lorawan_cs_network_servers_app_id'), 'Missing app_id index in lorawan migration 005');
+assert.ok(lorawanMigration005Sql.includes('idx_lorawan_cs_network_servers_dev_profile_id'), 'Missing dev_profile_id index in lorawan migration 005');
+assert.ok(lorawanSchemaSql.includes('005_add_app_and_device_profile_to_network_servers.sql'), 'Missing migration 005 in lorawan-chirpstack/schema.sql');
+console.log('✓ LoRaWAN ChirpStack migration 005 for Application ID and Device Profile ID validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

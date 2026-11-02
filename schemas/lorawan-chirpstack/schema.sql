@@ -10,4 +10,6 @@
 \i /opt/schemas/lorawan-chirpstack/migrations/002_grant_runtime_privileges.sql
 \i /opt/schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql
 \i /opt/schemas/lorawan-chirpstack/migrations/004_extend_gateway_test_sessions_metadata.sql
+\i /opt/schemas/lorawan-chirpstack/migrations/005_add_app_and_device_profile_to_network_servers.sql
+
 
