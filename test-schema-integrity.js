@@ -35,6 +35,7 @@ const requiredFiles = [
   'schemas/system/migrations/009_create_device_test_sessions_and_menu.sql',
   'schemas/system/migrations/010_create_device_test_registrations_and_views.sql',
   'schemas/system/migrations/011_create_list_device_testing_menu_and_indexes.sql',
+  'schemas/system/migrations/012_create_device_test_batches_and_menus.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
@@ -476,5 +477,18 @@ assert.ok(systemMigration011Sql.includes('idx_dtest_reg_user_app'), 'Missing idx
 assert.ok(systemMigration011Sql.includes('v_list_device_testing'), 'Missing v_list_device_testing view in migration 011');
 assert.ok(updatedSystemSchemaSql.includes('v_list_device_testing'), 'Missing v_list_device_testing in system/schema.sql');
 console.log('✓ System migration 011 and system/schema.sql list device testing validated');
+
+// 25. Validate System Migration 012 for Device Test Batches and Items (Create Test Batch & Device Test Batch)
+const systemMigration012Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/012_create_device_test_batches_and_menus.sql'), 'utf8');
+assert.ok(systemMigration012Sql.includes('CREATE TABLE IF NOT EXISTS system_schema."device_test_batches"'), 'Missing device_test_batches table in migration 012');
+assert.ok(systemMigration012Sql.includes('CREATE TABLE IF NOT EXISTS system_schema."device_test_batch_items"'), 'Missing device_test_batch_items table in migration 012');
+assert.ok(systemMigration012Sql.includes('reference_serial_number'), 'Missing reference_serial_number column in migration 012');
+assert.ok(systemMigration012Sql.includes('testing:create-test-batch'), 'Missing testing:create-test-batch menu item in migration 012');
+assert.ok(systemMigration012Sql.includes('testing:test-batch'), 'Missing testing:test-batch menu item in migration 012');
+assert.ok(systemMigration012Sql.includes('v_device_test_batches'), 'Missing v_device_test_batches view in migration 012');
+assert.ok(systemMigration012Sql.includes('v_device_test_batch_items_detail'), 'Missing v_device_test_batch_items_detail view in migration 012');
+assert.ok(updatedSystemSchemaSql.includes('device_test_batches'), 'Missing device_test_batches in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('v_device_test_batches'), 'Missing v_device_test_batches in system/schema.sql');
+console.log('✓ System migration 012 and system/schema.sql test batches validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

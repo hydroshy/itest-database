@@ -701,6 +701,131 @@ FROM system_schema."device_test_registrations" r
 LEFT JOIN lorawan_chirpstack."network_servers" ns
   ON (r."network_server_id" = ns."id");
 
+-- 012: Device Test Batches and Batch Items (Create Test Batch & Device Test Batch)
+CREATE TABLE IF NOT EXISTS system_schema."device_test_batches" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "batch_code" VARCHAR(100) NOT NULL UNIQUE,
+  "batch_name" VARCHAR(255) NOT NULL,
+  "item_code" VARCHAR(100) NOT NULL,
+  "long_fw" VARCHAR(255) NOT NULL,
+  "fw_version" VARCHAR(100),
+  "simu_id" VARCHAR(100),
+  "simulation_flow" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "flow_duration_seconds" INTEGER NOT NULL DEFAULT 600,
+  "auto_check_criteria" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "max_devices" INTEGER NOT NULL DEFAULT 10,
+  "status" VARCHAR(50) NOT NULL DEFAULT 'CREATED',
+  "verdict" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  "duration_seconds" INTEGER NOT NULL DEFAULT 0,
+  "started_at" TIMESTAMPTZ,
+  "finished_at" TIMESTAMPTZ,
+  "created_by" VARCHAR(100) NOT NULL DEFAULT 'tester',
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE TABLE IF NOT EXISTS system_schema."device_test_batch_items" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "batch_id" UUID NOT NULL REFERENCES system_schema."device_test_batches"("id") ON DELETE CASCADE,
+  "device_test_registration_id" UUID REFERENCES system_schema."device_test_registrations"("id") ON DELETE SET NULL,
+  "serial_number" VARCHAR(100) NOT NULL,
+  "dev_eui" VARCHAR(64) NOT NULL,
+  "item_code" VARCHAR(100) NOT NULL,
+  "fw_version" VARCHAR(100),
+  "reference_device_id" UUID,
+  "reference_serial_number" VARCHAR(100),
+  "reference_dev_eui" VARCHAR(64),
+  "reference_device_name" VARCHAR(255),
+  "status" VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+  "verdict" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  "dut_values" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "reference_values" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "comparison_result" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "packets_received" INTEGER NOT NULL DEFAULT 0,
+  "rules_passed" INTEGER NOT NULL DEFAULT 0,
+  "rules_failed" INTEGER NOT NULL DEFAULT 0,
+  "logs" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "idx_dtest_batches_item_fw"
+  ON system_schema."device_test_batches" ("item_code", "long_fw");
+
+CREATE INDEX IF NOT EXISTS "idx_dtest_batches_status"
+  ON system_schema."device_test_batches" ("status");
+
+CREATE INDEX IF NOT EXISTS "idx_dtest_batch_items_batch_id"
+  ON system_schema."device_test_batch_items" ("batch_id");
+
+CREATE INDEX IF NOT EXISTS "idx_dtest_batch_items_serial"
+  ON system_schema."device_test_batch_items" ("serial_number");
+
+CREATE OR REPLACE VIEW system_schema.v_device_test_batches AS
+SELECT
+  b."id",
+  b."batch_code",
+  b."batch_name",
+  b."item_code",
+  b."long_fw",
+  b."fw_version",
+  b."simu_id",
+  b."simulation_flow",
+  b."flow_duration_seconds",
+  b."auto_check_criteria",
+  b."max_devices",
+  b."status",
+  b."verdict",
+  b."duration_seconds",
+  b."started_at",
+  b."finished_at",
+  b."created_by",
+  b."created_at",
+  b."updated_at",
+  COUNT(i."id")::INTEGER AS "total_devices",
+  COUNT(CASE WHEN i."status" = 'PASS' THEN 1 END)::INTEGER AS "pass_devices",
+  COUNT(CASE WHEN i."status" = 'FAIL' THEN 1 END)::INTEGER AS "fail_devices",
+  COUNT(CASE WHEN i."status" = 'RUNNING' THEN 1 END)::INTEGER AS "running_devices"
+FROM system_schema."device_test_batches" b
+LEFT JOIN system_schema."device_test_batch_items" i
+  ON b."id" = i."batch_id"
+GROUP BY b."id";
+
+CREATE OR REPLACE VIEW system_schema.v_device_test_batch_items_detail AS
+SELECT
+  i."id",
+  i."batch_id",
+  b."batch_code",
+  b."batch_name",
+  b."item_code" AS "batch_item_code",
+  b."long_fw" AS "batch_long_fw",
+  b."flow_duration_seconds",
+  i."device_test_registration_id",
+  i."serial_number",
+  i."dev_eui",
+  i."item_code",
+  i."fw_version",
+  i."reference_device_id",
+  i."reference_serial_number",
+  i."reference_dev_eui",
+  i."reference_device_name",
+  i."status",
+  i."verdict",
+  i."dut_values",
+  i."reference_values",
+  i."comparison_result",
+  i."packets_received",
+  i."rules_passed",
+  i."rules_failed",
+  i."logs",
+  i."created_at",
+  i."updated_at"
+FROM system_schema."device_test_batch_items" i
+JOIN system_schema."device_test_batches" b
+  ON i."batch_id" = b."id";
+
+
 
 
 
