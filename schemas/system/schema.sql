@@ -647,6 +647,7 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_registrations" (
   "message" TEXT,
   "error_detail" TEXT,
   "device_id" UUID,
+  "is_reference" BOOLEAN NOT NULL DEFAULT false,
   "created_by" VARCHAR(100) NOT NULL DEFAULT 'tester',
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -709,10 +710,35 @@ SELECT
   r."message",
   r."error_detail",
   r."created_at",
-  r."updated_at"
+  r."updated_at",
+  COALESCE(r."is_reference", false) AS "is_reference"
 FROM system_schema."device_test_registrations" r
 LEFT JOIN lorawan_chirpstack."network_servers" ns
   ON (r."network_server_id" = ns."id");
+
+-- View for Reference Devices (Golden Reference)
+CREATE OR REPLACE VIEW system_schema.v_reference_devices AS
+SELECT
+  r."id",
+  r."serial_number",
+  r."dev_eui",
+  r."item_code",
+  r."fw_version",
+  COALESCE(r."long_fw", r."fw_version") AS "long_fw",
+  r."hw_version",
+  COALESCE(r."region_code", 'AS923-1') AS "region_code",
+  COALESCE(r."class_mode", 'A') AS "class_mode",
+  r."status",
+  r."created_by",
+  r."created_at",
+  r."updated_at"
+FROM system_schema."device_test_registrations" r
+WHERE r."is_reference" = true
+   OR r."status" ILIKE '%reference%'
+   OR r."status" ILIKE '%calibrated%'
+   OR r."serial_number" ILIKE 'REF-%'
+   OR r."serial_number" ILIKE 'STD-%'
+   OR r."serial_number" ILIKE 'CAL-%';
 
 -- 012: Device Test Batches and Batch Items (Create Test Batch & Device Test Batch)
 CREATE TABLE IF NOT EXISTS system_schema."device_test_batches" (
