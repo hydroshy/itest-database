@@ -50,6 +50,7 @@ const requiredFiles = [
   'schemas/devices/migrations/003_add_device_serial_number_and_traceability_columns.sql',
   'schemas/devices/migrations/004_update_device_plugin_id_default_to_device.sql',
   'schemas/devices/migrations/005_extend_gateway_test_sessions_metadata.sql',
+  'schemas/devices/migrations/006_add_packet_spreading_factor.sql',
   'schemas/lorawan-chirpstack/migrations/004_extend_gateway_test_sessions_metadata.sql',
   'schemas/lorawan-chirpstack/migrations/005_add_app_and_device_profile_to_network_servers.sql',
   'scripts/migrate.js'
@@ -514,5 +515,10 @@ assert.ok(systemMigration014Sql.includes('testing:device-payload'), 'Missing tes
 assert.ok(updatedSystemSchemaSql.includes('v_device_payload_live'), 'Missing v_device_payload_live in system/schema.sql');
 assert.ok(updatedSystemSchemaSql.includes('testing:device-payload'), 'Missing testing:device-payload in system/schema.sql');
 console.log('✓ System migration 014 and system/schema.sql device_packets & payload live view validated');
+
+const packetRfMigration = fs.readFileSync(path.join(__dirname, 'schemas/devices/migrations/006_add_packet_spreading_factor.sql'), 'utf8');
+assert.ok(packetRfMigration.includes('ALTER TABLE devices.device_packets'), 'RF migration must target backend physical table');
+assert.ok(packetRfMigration.includes('ADD COLUMN IF NOT EXISTS sf INTEGER'), 'Missing numeric spreading factor');
+assert.ok(packetRfMigration.includes('frequency TYPE NUMERIC(20, 3)'), 'Frequency must support Hz without overflow');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
