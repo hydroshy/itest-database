@@ -519,7 +519,7 @@ console.log('✓ System migration 014 and system/schema.sql device_packets & pay
 const packetRfMigration = fs.readFileSync(path.join(__dirname, 'schemas/devices/migrations/006_add_packet_spreading_factor.sql'), 'utf8');
 assert.ok(packetRfMigration.includes('ALTER TABLE devices.device_packets'), 'RF migration must target backend physical table');
 assert.ok(packetRfMigration.includes('ADD COLUMN IF NOT EXISTS sf INTEGER'), 'Missing numeric spreading factor');
-assert.ok(packetRfMigration.includes('frequency TYPE NUMERIC(20, 3)'), 'Frequency must support Hz without overflow');
+assert.ok(!/ALTER COLUMN\s+\w+\s+TYPE/i.test(packetRfMigration), 'RF migration must preserve types used by compatibility views');
 
 const autoCheckProfileSql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/015_create_device_autocheck_profiles.sql'), 'utf8');
 for (const sql of [autoCheckProfileSql, updatedSystemSchemaSql]) {
