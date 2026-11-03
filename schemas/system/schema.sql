@@ -443,16 +443,24 @@ CREATE INDEX IF NOT EXISTS "idx_devices_metadata_gin" ON system_schema."devices"
 
 CREATE TABLE IF NOT EXISTS system_schema."device_packets" (
   "id" BIGSERIAL PRIMARY KEY,
-  "device_id" UUID NOT NULL REFERENCES system_schema."devices"("id") ON DELETE CASCADE,
+  "device_id" UUID REFERENCES system_schema."devices"("id") ON DELETE CASCADE,
+  "dev_eui" VARCHAR(64),
   "packet_type" VARCHAR(50) NOT NULL DEFAULT 'uplink',
   "f_port" INTEGER,
   "f_cnt" BIGINT,
+  "rssi" DOUBLE PRECISION,
+  "snr" DOUBLE PRECISION,
+  "sf" VARCHAR(20),
+  "frequency" DOUBLE PRECISION,
   "raw_payload" TEXT,
   "decoded_payload" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "rf_info" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS "idx_device_packets_dev_eui" ON system_schema."device_packets"("dev_eui");
+CREATE INDEX IF NOT EXISTS "idx_device_packets_created_desc" ON system_schema."device_packets"("created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_device_packets_deveui_created" ON system_schema."device_packets"("dev_eui", "created_at" DESC);
 CREATE INDEX IF NOT EXISTS "idx_device_packets_device_id_created_at" ON system_schema."device_packets"("device_id", "created_at" DESC);
 CREATE INDEX IF NOT EXISTS "idx_device_packets_packet_type" ON system_schema."device_packets"("packet_type");
 CREATE INDEX IF NOT EXISTS "idx_device_packets_decoded_payload_gin" ON system_schema."device_packets" USING GIN ("decoded_payload");
@@ -826,6 +834,60 @@ SELECT
 FROM system_schema."device_test_batch_items" i
 JOIN system_schema."device_test_batches" b
   ON i."batch_id" = b."id";
+
+-- 014: Device Payload Live View and Menu
+CREATE OR REPLACE VIEW system_schema.v_device_payload_live AS
+SELECT
+  p."id",
+  p."device_id",
+  COALESCE(p."dev_eui", d."network_id", r."dev_eui") AS "dev_eui",
+  COALESCE(d."serial_number", r."serial_number") AS "serial_number",
+  COALESCE(d."device_name", r."device_name", r."serial_number", p."dev_eui") AS "device_name",
+  COALESCE(d."item_code", r."item_code") AS "item_code",
+  COALESCE(r."long_fw", r."fw_version") AS "fw_version",
+  r."hw_version",
+  p."packet_type",
+  p."f_port",
+  COALESCE(p."f_cnt", (p."rf_info"->>'fcnt')::BIGINT, (p."rf_info"->>'f_cnt')::BIGINT, 0) AS "f_cnt",
+  COALESCE(p."rssi", (p."rf_info"->>'rssi')::DOUBLE PRECISION) AS "rssi",
+  COALESCE(p."snr", (p."rf_info"->>'snr')::DOUBLE PRECISION) AS "snr",
+  COALESCE(p."sf", p."rf_info"->>'sf', p."rf_info"->>'spreading_factor', p."rf_info"->>'spreadingFactor', 'SF7') AS "sf",
+  COALESCE(p."frequency", (p."rf_info"->>'frequency')::DOUBLE PRECISION) AS "frequency",
+  p."raw_payload",
+  p."decoded_payload",
+  p."rf_info",
+  p."created_at"
+FROM system_schema."device_packets" p
+LEFT JOIN system_schema."devices" d
+  ON p."device_id" = d."id"
+LEFT JOIN system_schema."device_test_registrations" r
+  ON (p."dev_eui" = r."dev_eui" OR d."network_id" = r."dev_eui");
+
+INSERT INTO system_schema."menu_items" (
+  "id", "title", "description", "route", "icon", "category", "pluginId", "tab", "order", "isActive"
+) VALUES (
+  'testing:device-payload',
+  'Device Payload',
+  'Bảng dữ liệu nhận và giải mã payload từ ChirpStack HTTP Integration theo từng loại cảm biến',
+  '/plugins/testing?tab=device-payload',
+  'Activity',
+  'plugin',
+  'testing',
+  'device-payload',
+  16,
+  true
+)
+ON CONFLICT ("id") DO UPDATE SET
+  "title" = EXCLUDED."title",
+  "description" = EXCLUDED."description",
+  "route" = EXCLUDED."route",
+  "icon" = EXCLUDED."icon",
+  "category" = EXCLUDED."category",
+  "pluginId" = EXCLUDED."pluginId",
+  "tab" = EXCLUDED."tab",
+  "order" = EXCLUDED."order",
+  "isActive" = EXCLUDED."isActive",
+  "updated_at" = CURRENT_TIMESTAMP;
 
 
 

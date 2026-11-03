@@ -37,6 +37,7 @@ const requiredFiles = [
   'schemas/system/migrations/011_create_list_device_testing_menu_and_indexes.sql',
   'schemas/system/migrations/012_create_device_test_batches_and_menus.sql',
   'schemas/system/migrations/013_add_long_fw_to_device_test_registrations.sql',
+  'schemas/system/migrations/014_enhance_device_packets_and_create_payload_live_view.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
@@ -502,5 +503,16 @@ assert.ok(systemMigration013Sql.includes('COALESCE(r."long_fw", r."fw_version") 
 assert.ok(updatedSystemSchemaSql.includes('"long_fw" VARCHAR(255)'), 'Missing long_fw in system/schema.sql table');
 assert.ok(updatedSystemSchemaSql.includes('COALESCE(r."long_fw", r."fw_version") AS "long_fw"'), 'Missing long_fw in system/schema.sql view');
 console.log('✓ System migration 013 and system/schema.sql long_fw support validated');
+
+// 27. Validate System Migration 014 for device_packets enhancement and v_device_payload_live
+const systemMigration014Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/014_enhance_device_packets_and_create_payload_live_view.sql'), 'utf8');
+assert.ok(systemMigration014Sql.includes('"rssi" DOUBLE PRECISION'), 'Missing rssi column in migration 014');
+assert.ok(systemMigration014Sql.includes('"snr" DOUBLE PRECISION'), 'Missing snr column in migration 014');
+assert.ok(systemMigration014Sql.includes('"frequency" DOUBLE PRECISION'), 'Missing frequency column in migration 014');
+assert.ok(systemMigration014Sql.includes('v_device_payload_live'), 'Missing v_device_payload_live view in migration 014');
+assert.ok(systemMigration014Sql.includes('testing:device-payload'), 'Missing testing:device-payload menu item in migration 014');
+assert.ok(updatedSystemSchemaSql.includes('v_device_payload_live'), 'Missing v_device_payload_live in system/schema.sql');
+assert.ok(updatedSystemSchemaSql.includes('testing:device-payload'), 'Missing testing:device-payload in system/schema.sql');
+console.log('✓ System migration 014 and system/schema.sql device_packets & payload live view validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
