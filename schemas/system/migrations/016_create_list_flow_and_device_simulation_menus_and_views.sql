@@ -214,29 +214,32 @@ ON CONFLICT ("id") DO UPDATE SET
   "updatedAt" = CURRENT_TIMESTAMP;
 
 -- 5. Register permissions and assign to roles
-INSERT INTO system_schema."permissions" ("name", "description", "resource", "action")
+INSERT INTO system_schema."permission" ("name", "description", "module", "action")
 VALUES
-  ('menu:testing-list-flow-simulation:view', 'View List Flow Simulation tab in testing plugin', 'menu', 'view'),
-  ('menu:testing-list-device-simulation:view', 'View List Device Simulation tab in testing plugin', 'menu', 'view'),
+  ('menu:testing-list-flow-simulation:view', 'View List Flow Simulation tab in testing plugin', 'menu', 'read'),
+  ('menu:testing-list-device-simulation:view', 'View List Device Simulation tab in testing plugin', 'menu', 'read'),
   ('testing:flow:manage', 'Create, update, delete flow simulation profiles', 'testing', 'manage'),
   ('testing:simulation-device:manage', 'Manage simulation devices', 'testing', 'manage')
-ON CONFLICT ("name") DO NOTHING;
+ON CONFLICT ("name") DO UPDATE SET
+  "description" = EXCLUDED."description",
+  "module" = EXCLUDED."module",
+  "action" = EXCLUDED."action";
 
 -- Assign menu permissions to all active roles
-INSERT INTO system_schema."role_menu_permissions" ("role_id", "menu_id")
+INSERT INTO system_schema."role_menu_permissions" ("roleId", "menuItemId")
 SELECT r."id", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
-WHERE r."name" IN ('ADMIN', 'OPERATOR', 'TESTER', 'QA_ENGINEER', 'TECHNICIAN')
+WHERE r."code" IN ('ADMIN', 'admin', 'OPERATOR', 'operator', 'TESTER', 'tester', 'QA_ENGINEER', 'qa_engineer', 'TECHNICIAN', 'technician')
   AND m."id" IN ('testing:list-flow-simulation', 'testing:list-device-simulation')
-ON CONFLICT ("role_id", "menu_id") DO NOTHING;
+ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 -- Assign action permissions to roles
 INSERT INTO system_schema."role_permissions" ("role_id", "permission_id")
 SELECT r."id", p."id"
 FROM system_schema."roles" r
-CROSS JOIN system_schema."permissions" p
-WHERE r."name" IN ('ADMIN', 'OPERATOR', 'TESTER', 'QA_ENGINEER')
+CROSS JOIN system_schema."permission" p
+WHERE r."code" IN ('ADMIN', 'admin', 'OPERATOR', 'operator', 'TESTER', 'tester', 'QA_ENGINEER', 'qa_engineer')
   AND p."name" IN ('menu:testing-list-flow-simulation:view', 'menu:testing-list-device-simulation:view', 'testing:flow:manage', 'testing:simulation-device:manage')
 ON CONFLICT ("role_id", "permission_id") DO NOTHING;
 
