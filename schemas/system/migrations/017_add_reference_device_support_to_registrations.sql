@@ -6,7 +6,7 @@
 -- Description:
 --   1. Idempotently ensure columns long_fw and is_reference exist on device_test_registrations.
 --   2. Create view system_schema.v_reference_devices for querying reference devices dynamically without mock data.
---   3. Update view system_schema.v_list_device_testing.
+--   3. Drop and recreate view system_schema.v_list_device_testing to prevent column rename conflicts in PostgreSQL.
 --   4. Grant runtime privileges to itest_system_user, itest_plugins_user, itest_ops_user.
 -- ==============================================================================
 
@@ -51,8 +51,10 @@ WHERE r."is_reference" = true
 
 COMMENT ON VIEW system_schema.v_reference_devices IS 'Danh sách thiết bị chuẩn (Golden Reference) từ đăng ký thiết bị thực tế';
 
--- 3. Update view v_list_device_testing to include is_reference at the end
-CREATE OR REPLACE VIEW system_schema.v_list_device_testing AS
+-- 3. Drop view if exists and recreate v_list_device_testing to allow column additions/reordering safely
+DROP VIEW IF EXISTS system_schema.v_list_device_testing;
+
+CREATE VIEW system_schema.v_list_device_testing AS
 SELECT
   r."id",
   r."registration_code",
