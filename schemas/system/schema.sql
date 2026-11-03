@@ -950,13 +950,47 @@ CREATE TABLE IF NOT EXISTS system_schema.device_autocheck_profiles (
 CREATE INDEX IF NOT EXISTS idx_autocheck_profiles_product
   ON system_schema.device_autocheck_profiles (item_code, fw_version);
 
+CREATE INDEX IF NOT EXISTS "idx_autocheck_profiles_criteria_gin"
+  ON system_schema."device_autocheck_profiles" USING GIN ("criteria");
+
+CREATE INDEX IF NOT EXISTS "idx_autocheck_profiles_created_at"
+  ON system_schema."device_autocheck_profiles" ("created_at" DESC);
+
+CREATE OR REPLACE VIEW system_schema.v_device_autocheck_profiles AS
+SELECT
+  p."id",
+  p."autocheck_id",
+  p."name",
+  p."item_code",
+  p."fw_version",
+  p."reference_item_code",
+  p."reference_fw_version",
+  (p."reference_item_code" IS NOT NULL AND btrim(p."reference_item_code") <> '') AS "requires_reference",
+  p."criteria",
+  jsonb_array_length(
+    CASE
+      WHEN jsonb_typeof(p."criteria"->'rules') = 'array' THEN p."criteria"->'rules'
+      WHEN jsonb_typeof(p."criteria"->'customRules') = 'array' THEN p."criteria"->'customRules'
+      ELSE '[]'::jsonb
+    END
+  ) AS "rule_count",
+  p."created_by",
+  p."created_at",
+  p."updated_at"
+FROM system_schema."device_autocheck_profiles" p;
+
 DO $$
 BEGIN
   IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_system_user') THEN
     GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.device_autocheck_profiles TO itest_system_user;
+    GRANT SELECT ON system_schema.v_device_autocheck_profiles TO itest_system_user;
   END IF;
   IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugins_user') THEN
     GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.device_autocheck_profiles TO itest_plugins_user;
+    GRANT SELECT ON system_schema.v_device_autocheck_profiles TO itest_plugins_user;
+  END IF;
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_ops_user') THEN
+    GRANT SELECT ON system_schema.v_device_autocheck_profiles TO itest_ops_user;
   END IF;
 END $$;
 
