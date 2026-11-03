@@ -494,10 +494,12 @@ LEFT JOIN traceability_manager."traceability_wa" wa ON d."wa_id" = wa."id" OR d.
 CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "simu_id" VARCHAR(100) NOT NULL UNIQUE,
-  "profile_name" VARCHAR(255) NOT NULL,
+  "profile_name" VARCHAR(255),
+  "name" VARCHAR(255),
+  "description" TEXT,
   "serial_number" VARCHAR(100),
   "network_id" VARCHAR(100),
-  "device_name" VARCHAR(255) NOT NULL,
+  "device_name" VARCHAR(255),
   "device_type" VARCHAR(100) NOT NULL DEFAULT 'lorawan_node',
   "plugin_id" VARCHAR(100) NOT NULL DEFAULT 'testing',
   "so_number" VARCHAR(100),
@@ -523,6 +525,7 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "uplink_interval_sec" INTEGER NOT NULL DEFAULT 10,
   "timed_actions" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "flow_blocks" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "is_flow_template" BOOLEAN NOT NULL DEFAULT TRUE,
   "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "created_by" VARCHAR(100) NOT NULL DEFAULT 'admin',
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -930,4 +933,43 @@ BEGIN
     GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.device_autocheck_profiles TO itest_plugins_user;
   END IF;
 END $$;
+
+-- 15. View for Flow Simulations
+CREATE OR REPLACE VIEW system_schema.v_simulation_flows AS
+SELECT
+  p."id",
+  p."simu_id",
+  COALESCE(p."name", p."profile_name", p."simu_id") AS "name",
+  p."description",
+  p."item_code",
+  p."sku",
+  p."long_fw",
+  COALESCE(p."sensor_connectivity", 'LoRaWAN') AS "sensor_connectivity",
+  p."flow_duration_minutes",
+  p."flow_blocks",
+  jsonb_array_length(
+    CASE
+      WHEN jsonb_typeof(p."flow_blocks") = 'array' THEN p."flow_blocks"
+      ELSE '[]'::jsonb
+    END
+  ) AS "block_count",
+  p."timed_actions",
+  p."created_by",
+  p."created_at",
+  p."updated_at"
+FROM system_schema."simulation_profiles" p;
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_system_user') THEN
+    GRANT SELECT ON system_schema.v_simulation_flows TO itest_system_user;
+  END IF;
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugins_user') THEN
+    GRANT SELECT ON system_schema.v_simulation_flows TO itest_plugins_user;
+  END IF;
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_ops_user') THEN
+    GRANT SELECT ON system_schema.v_simulation_flows TO itest_ops_user;
+  END IF;
+END $$;
+
 
