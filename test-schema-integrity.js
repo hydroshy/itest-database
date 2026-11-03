@@ -42,6 +42,7 @@ const requiredFiles = [
   'schemas/decoder/schema.sql',
   'schemas/decoder/migrations/001_create_decoder_schema_and_tables.sql',
   'schemas/decoder/migrations/002_add_name_column_to_decoder_scripts.sql',
+  'schemas/decoder/migrations/003_add_item_code_and_fw_code_to_decoder_scripts.sql',
   'schemas/devices/schema.sql',
   'schemas/devices/migrations/001_create_devices_schema_and_tables.sql',
   'schemas/devices/migrations/002_add_device_id_and_gateway_name_columns.sql',

@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS decoder.decoder_scripts (
     name VARCHAR(255),
     sku VARCHAR(100) NOT NULL,
     long_fw VARCHAR(100) NOT NULL,
+    item_code VARCHAR(100),
+    fw_code VARCHAR(50),
     protocol VARCHAR(50) NOT NULL DEFAULT 'lorawan',
     script TEXT NOT NULL,
     description TEXT,
@@ -29,6 +31,9 @@ CREATE TABLE IF NOT EXISTS decoder.decoder_scripts (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_decoder_name ON decoder.decoder_scripts(name);
 CREATE INDEX IF NOT EXISTS idx_decoder_sku ON decoder.decoder_scripts(sku);
+CREATE INDEX IF NOT EXISTS idx_decoder_item_code ON decoder.decoder_scripts(item_code);
+CREATE INDEX IF NOT EXISTS idx_decoder_fw_code ON decoder.decoder_scripts(fw_code);
+CREATE INDEX IF NOT EXISTS idx_decoder_item_fw ON decoder.decoder_scripts(item_code, fw_code);
 CREATE INDEX IF NOT EXISTS idx_decoder_protocol ON decoder.decoder_scripts(protocol);
 CREATE INDEX IF NOT EXISTS idx_decoder_is_active ON decoder.decoder_scripts(is_active);
 CREATE INDEX IF NOT EXISTS idx_decoder_sample_decoded_gin ON decoder.decoder_scripts USING GIN (sample_decoded);
@@ -57,6 +62,8 @@ CREATE OR REPLACE VIEW decoder.v_memmap_decoders AS
 SELECT
     COALESCE(p.sku, d.sku) AS sku,
     COALESCE(p.long_fw, d.long_fw) AS long_fw,
+    d.item_code,
+    d.fw_code,
     p.id AS memmap_profile_id,
     p.name AS memmap_profile_name,
     p.short_fw AS memmap_short_fw,
