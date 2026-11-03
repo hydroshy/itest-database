@@ -4,17 +4,23 @@
 -- Schema: system_schema
 -- Target: device_test_registrations, v_reference_devices, v_list_device_testing
 -- Description:
---   1. Add is_reference flag to device_test_registrations to distinguish calibrated standard/golden reference devices.
+--   1. Idempotently ensure columns long_fw and is_reference exist on device_test_registrations.
 --   2. Create view system_schema.v_reference_devices for querying reference devices dynamically without mock data.
---   3. Append is_reference to view system_schema.v_list_device_testing.
+--   3. Update view system_schema.v_list_device_testing.
 --   4. Grant runtime privileges to itest_system_user, itest_plugins_user, itest_ops_user.
 -- ==============================================================================
 
 SET search_path TO system_schema, public;
 
--- 1. Add is_reference column to device_test_registrations
+-- 1. Ensure required columns exist on device_test_registrations before defining views
 ALTER TABLE system_schema."device_test_registrations"
+  ADD COLUMN IF NOT EXISTS "long_fw" VARCHAR(255),
   ADD COLUMN IF NOT EXISTS "is_reference" BOOLEAN NOT NULL DEFAULT false;
+
+-- Backfill long_fw from fw_version if not set
+UPDATE system_schema."device_test_registrations"
+SET "long_fw" = "fw_version"
+WHERE "long_fw" IS NULL AND "fw_version" IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_is_reference"
   ON system_schema."device_test_registrations" ("is_reference");
