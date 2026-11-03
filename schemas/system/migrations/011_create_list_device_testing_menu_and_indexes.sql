@@ -119,6 +119,7 @@ SELECT
   r."serial_number",
   r."item_code",
   r."fw_version",
+  COALESCE(r."long_fw", r."fw_version") AS "long_fw",
   r."hw_version",
   r."fw_code",
   r."me_version",

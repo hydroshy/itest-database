@@ -36,6 +36,7 @@ const requiredFiles = [
   'schemas/system/migrations/010_create_device_test_registrations_and_views.sql',
   'schemas/system/migrations/011_create_list_device_testing_menu_and_indexes.sql',
   'schemas/system/migrations/012_create_device_test_batches_and_menus.sql',
+  'schemas/system/migrations/013_add_long_fw_to_device_test_registrations.sql',
   'schemas/lorawan-chirpstack/migrations/003_create_gateway_test_sessions.sql',
   'schemas/plugins/migrations/001_create_decoder_scripts_and_views.sql',
   'schemas/decoder/schema.sql',
@@ -490,5 +491,15 @@ assert.ok(systemMigration012Sql.includes('v_device_test_batch_items_detail'), 'M
 assert.ok(updatedSystemSchemaSql.includes('device_test_batches'), 'Missing device_test_batches in system/schema.sql');
 assert.ok(updatedSystemSchemaSql.includes('v_device_test_batches'), 'Missing v_device_test_batches in system/schema.sql');
 console.log('✓ System migration 012 and system/schema.sql test batches validated');
+
+// 26. Validate System Migration 013 for long_fw column in device_test_registrations and view
+const systemMigration013Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/013_add_long_fw_to_device_test_registrations.sql'), 'utf8');
+assert.ok(systemMigration013Sql.includes('ALTER TABLE system_schema."device_test_registrations"'), 'Missing ALTER TABLE in migration 013');
+assert.ok(systemMigration013Sql.includes('"long_fw" VARCHAR(255)'), 'Missing long_fw column in migration 013');
+assert.ok(systemMigration013Sql.includes('UPDATE system_schema."device_test_registrations"'), 'Missing backfill UPDATE in migration 013');
+assert.ok(systemMigration013Sql.includes('COALESCE(r."long_fw", r."fw_version") AS "long_fw"'), 'Missing long_fw in v_list_device_testing view in migration 013');
+assert.ok(updatedSystemSchemaSql.includes('"long_fw" VARCHAR(255)'), 'Missing long_fw in system/schema.sql table');
+assert.ok(updatedSystemSchemaSql.includes('COALESCE(r."long_fw", r."fw_version") AS "long_fw"'), 'Missing long_fw in system/schema.sql view');
+console.log('✓ System migration 013 and system/schema.sql long_fw support validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

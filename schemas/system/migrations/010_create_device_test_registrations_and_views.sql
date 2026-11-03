@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_registrations" (
   "baud_rate" INTEGER NOT NULL DEFAULT 9600,
   "fw_code" VARCHAR(50),             -- Reg 0 (5 regs, string)
   "fw_version" VARCHAR(50),          -- Reg 5 (4 regs, string)
+  "long_fw" VARCHAR(255),            -- Optional explicit long FW version
   "hw_version" VARCHAR(50),          -- Reg 9 (2 regs, string)
   "me_version" VARCHAR(50),          -- Reg 15 (2 regs, string)
   "dev_eui" VARCHAR(64),             -- Reg 27 (4 regs, hex 64-bit)
