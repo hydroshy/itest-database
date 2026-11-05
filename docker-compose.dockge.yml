@@ -1,0 +1,137 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: itest-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERPASS:-itest_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-itest_platform}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - itest_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_SUPERUSER:-postgres} -d ${POSTGRES_DB:-itest_platform}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - itest_net
+
+  db-migrator:
+    image: postgres:17-alpine
+    container_name: itest-db-migrator
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGUSER: ${POSTGRES_SUPERUSER:-postgres}
+      PGPASSWORD: ${POSTGRES_SUPERPASS:-itest_secure_password_2026}
+      PGDATABASE: ${POSTGRES_DB:-itest_platform}
+      REPO_URL: ${DB_REPO_URL:-https://github.com/hydroshy/itest-database.git}
+      REPO_BRANCH: ${DB_REPO_BRANCH:-main}
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - itest_db_source:/opt/itest-database
+    networks:
+      - itest_net
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        echo "=== ITEST Database Migrator ==="
+
+        # --- 1. Install git ---
+        apk add --no-cache git
+
+        WORKDIR="/opt/itest-database"
+
+        # --- 2. Git clone or fetch ---
+        if [ ! -d "$WORKDIR/.git" ]; then
+          echo ">>> Cloning itest-database repository..."
+          git clone -b "$REPO_BRANCH" "$REPO_URL" "$WORKDIR"
+        else
+          echo ">>> Fetching latest changes..."
+          cd "$WORKDIR"
+          git fetch origin "$REPO_BRANCH"
+          git reset --hard "origin/$REPO_BRANCH"
+        fi
+
+        cd "$WORKDIR"
+        echo ">>> Commit: $(git log -1 --oneline)"
+
+        # --- 3. Wait for PostgreSQL to accept connections ---
+        echo ">>> Waiting for PostgreSQL..."
+        until pg_isready -h postgres -U "$PGUSER" -d "$PGDATABASE"; do
+          sleep 1
+        done
+
+        # --- 4. Run init scripts (schemas, users, grants) ---
+        echo ">>> Running 01-init-databases.sql..."
+        psql -v ON_ERROR_STOP=0 -f "$WORKDIR/init-scripts/01-init-databases.sql"
+
+        echo ">>> Running schema DDLs..."
+        for schema_dir in \
+          system plugins ops-agent lorawan-chirpstack \
+          memmap-manager finalconfig-manager traceability-manager \
+          devices decoder; do
+          SCHEMA_FILE="$WORKDIR/schemas/$schema_dir/schema.sql"
+          if [ -f "$SCHEMA_FILE" ]; then
+            echo "  -> $schema_dir/schema.sql"
+            psql -v ON_ERROR_STOP=0 -f "$SCHEMA_FILE"
+          fi
+        done
+
+        # --- 5. Run all migrations in order ---
+        echo ">>> Running migrations..."
+        for schema_dir in \
+          system plugins ops-agent lorawan-chirpstack \
+          memmap-manager finalconfig-manager traceability-manager \
+          devices decoder; do
+          MIGRATION_DIR="$WORKDIR/schemas/$schema_dir/migrations"
+          if [ -d "$MIGRATION_DIR" ]; then
+            for migration in $(ls "$MIGRATION_DIR"/*.sql 2>/dev/null | sort); do
+              echo "  -> $(basename $migration)"
+              psql -v ON_ERROR_STOP=0 -f "$migration"
+            done
+          fi
+        done
+
+        echo "=== Database migration complete ==="
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: itest-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@itest.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      TZ: Asia/Ho_Chi_Minh
+    volumes:
+      - itest_pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      - postgres
+    networks:
+      - itest_net
+
+volumes:
+  itest_pgdata: null
+  itest_db_source: null
+  itest_pgadmin_data: null
+
+networks:
+  itest_net:
+    name: itest_net
+    driver: bridge
