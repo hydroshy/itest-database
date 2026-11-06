@@ -123,6 +123,7 @@ CREATE INDEX IF NOT EXISTS "idx_dtest_batch_items_ref_serial"
   ON system_schema."device_test_batch_items" ("reference_serial_number");
 
 -- 4. Views for Batches and Items
+DROP VIEW IF EXISTS system_schema.v_device_test_batches CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_test_batches AS
 SELECT
   b."id",
@@ -153,6 +154,7 @@ LEFT JOIN system_schema."device_test_batch_items" i
   ON b."id" = i."batch_id"
 GROUP BY b."id";
 
+DROP VIEW IF EXISTS system_schema.v_device_test_batch_items_detail CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_test_batch_items_detail AS
 SELECT
   i."id",

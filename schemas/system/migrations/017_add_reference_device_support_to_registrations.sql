@@ -26,6 +26,7 @@ CREATE INDEX IF NOT EXISTS "idx_dtest_reg_is_reference"
   ON system_schema."device_test_registrations" ("is_reference");
 
 -- 2. Create view v_reference_devices
+DROP VIEW IF EXISTS system_schema.v_reference_devices CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_reference_devices AS
 SELECT
   r."id",

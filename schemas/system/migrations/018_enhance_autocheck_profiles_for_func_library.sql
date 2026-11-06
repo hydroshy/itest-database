@@ -46,6 +46,7 @@ CREATE INDEX IF NOT EXISTS "idx_autocheck_profiles_created_at"
   ON system_schema."device_autocheck_profiles" ("created_at" DESC);
 
 -- 3. Create view v_device_autocheck_profiles
+DROP VIEW IF EXISTS system_schema.v_device_autocheck_profiles CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_autocheck_profiles AS
 SELECT
   p."id",

@@ -96,6 +96,7 @@ CREATE INDEX IF NOT EXISTS "idx_dtest_reg_created_at" ON system_schema."device_t
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_registers_gin" ON system_schema."device_test_registrations" USING GIN ("raw_registers_snapshot");
 
 -- 2. Detail Enriched View linking Traceability & ChirpStack Network Servers
+DROP VIEW IF EXISTS system_schema.v_device_test_registrations_detail CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_test_registrations_detail AS
 SELECT
   r."id",
@@ -147,6 +148,7 @@ LEFT JOIN lorawan_chirpstack."network_servers" ns
   ON (r."network_server_id" = ns."id");
 
 -- 3. Active Traceability Quick View for Step 1 Dropdowns
+DROP VIEW IF EXISTS system_schema.v_testing_active_traceability CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_testing_active_traceability AS
 SELECT
   so."id" AS "so_id",

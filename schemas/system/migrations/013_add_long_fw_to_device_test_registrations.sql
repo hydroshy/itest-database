@@ -22,6 +22,7 @@ SET "long_fw" = "fw_version"
 WHERE "long_fw" IS NULL AND "fw_version" IS NOT NULL;
 
 -- 3. Update view v_list_device_testing
+DROP VIEW IF EXISTS system_schema.v_list_device_testing CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_list_device_testing AS
 SELECT
   r."id",

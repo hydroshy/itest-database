@@ -76,6 +76,7 @@ COMMENT ON COLUMN system_schema."simulation_profiles"."flow_blocks" IS 'Chuỗi 
 COMMENT ON COLUMN system_schema."simulation_profiles"."is_flow_template" IS 'Đánh dấu kịch bản Flow Simulation độc lập (không bắt buộc gắn kèm thiết bị vật lý)';
 
 -- 2. Create view v_simulation_flows
+DROP VIEW IF EXISTS system_schema.v_simulation_flows CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_simulation_flows AS
 SELECT
   p."id",

@@ -399,15 +399,19 @@ WHERE r."code" IN ('END_USER', 'user')
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 -- 6. Compatibility Views for cross-schema access (public <-> system_schema)
+DROP VIEW IF EXISTS system_schema."system_menu_items" CASCADE;
 CREATE OR REPLACE VIEW system_schema."system_menu_items" AS
 SELECT * FROM system_schema."menu_items";
 
+DROP VIEW IF EXISTS public."system_menu_items" CASCADE;
 CREATE OR REPLACE VIEW public."system_menu_items" AS
 SELECT * FROM system_schema."menu_items";
 
+DROP VIEW IF EXISTS public."menu_items" CASCADE;
 CREATE OR REPLACE VIEW public."menu_items" AS
 SELECT * FROM system_schema."menu_items";
 
+DROP VIEW IF EXISTS public."role_menu_permissions" CASCADE;
 CREATE OR REPLACE VIEW public."role_menu_permissions" AS
 SELECT * FROM system_schema."role_menu_permissions";
 
@@ -477,6 +481,7 @@ CREATE INDEX IF NOT EXISTS "idx_device_packets_packet_type" ON system_schema."de
 CREATE INDEX IF NOT EXISTS "idx_device_packets_decoded_payload_gin" ON system_schema."device_packets" USING GIN ("decoded_payload");
 CREATE INDEX IF NOT EXISTS "idx_device_packets_rf_info_gin" ON system_schema."device_packets" USING GIN ("rf_info");
 
+DROP VIEW IF EXISTS system_schema.v_devices_traceability CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_devices_traceability AS
 SELECT
   d."id" AS "device_id",
@@ -622,6 +627,7 @@ CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_created_at" ON system_schema."dev
 CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_flow_config_gin" ON system_schema."device_test_sessions" USING GIN ("flow_config");
 CREATE INDEX IF NOT EXISTS "idx_dtest_sessions_auto_check_gin" ON system_schema."device_test_sessions" USING GIN ("auto_check_criteria");
 
+DROP VIEW IF EXISTS system_schema.v_device_test_sessions CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_test_sessions AS
 SELECT * FROM system_schema."device_test_sessions";
 
@@ -683,6 +689,7 @@ CREATE INDEX IF NOT EXISTS "idx_dtest_reg_status" ON system_schema."device_test_
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_created_at" ON system_schema."device_test_registrations"("created_at" DESC);
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_registers_gin" ON system_schema."device_test_registrations" USING GIN ("raw_registers_snapshot");
 
+DROP VIEW IF EXISTS system_schema.v_device_test_registrations_detail CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_test_registrations_detail AS
 SELECT * FROM system_schema."device_test_registrations";
 
@@ -699,6 +706,7 @@ CREATE INDEX IF NOT EXISTS "idx_dtest_reg_user_app"
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_admin_app"
   ON system_schema."device_test_registrations" ("application_id", "created_at" DESC);
 
+DROP VIEW IF EXISTS system_schema.v_list_device_testing CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_list_device_testing AS
 SELECT
   r."id",
@@ -738,6 +746,7 @@ LEFT JOIN lorawan_chirpstack."network_servers" ns
   ON (r."network_server_id" = ns."id");
 
 -- View for Reference Devices (Golden Reference)
+DROP VIEW IF EXISTS system_schema.v_reference_devices CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_reference_devices AS
 SELECT
   r."id",
@@ -822,6 +831,7 @@ CREATE INDEX IF NOT EXISTS "idx_dtest_batch_items_batch_id"
 CREATE INDEX IF NOT EXISTS "idx_dtest_batch_items_serial"
   ON system_schema."device_test_batch_items" ("serial_number");
 
+DROP VIEW IF EXISTS system_schema.v_device_test_batches CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_test_batches AS
 SELECT
   b."id",
@@ -852,6 +862,7 @@ LEFT JOIN system_schema."device_test_batch_items" i
   ON b."id" = i."batch_id"
 GROUP BY b."id";
 
+DROP VIEW IF EXISTS system_schema.v_device_test_batch_items_detail CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_test_batch_items_detail AS
 SELECT
   i."id",
@@ -886,6 +897,7 @@ JOIN system_schema."device_test_batches" b
   ON i."batch_id" = b."id";
 
 -- 014: Device Payload Live View and Menu
+DROP VIEW IF EXISTS system_schema.v_device_payload_live CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_payload_live AS
 SELECT
   p."id",
@@ -977,6 +989,7 @@ CREATE INDEX IF NOT EXISTS "idx_autocheck_profiles_criteria_gin"
 CREATE INDEX IF NOT EXISTS "idx_autocheck_profiles_created_at"
   ON system_schema."device_autocheck_profiles" ("created_at" DESC);
 
+DROP VIEW IF EXISTS system_schema.v_device_autocheck_profiles CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_autocheck_profiles AS
 SELECT
   p."id",
@@ -1016,6 +1029,7 @@ BEGIN
 END $$;
 
 -- 15. View for Flow Simulations
+DROP VIEW IF EXISTS system_schema.v_simulation_flows CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_simulation_flows AS
 SELECT
   p."id",

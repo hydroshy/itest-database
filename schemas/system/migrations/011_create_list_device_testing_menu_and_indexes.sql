@@ -112,6 +112,7 @@ ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 -- 9. Class (class_mode)
 -- 10. Region (region_code)
 -- 11. Created by (created_by)
+DROP VIEW IF EXISTS system_schema.v_list_device_testing CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_list_device_testing AS
 SELECT
   r."id",

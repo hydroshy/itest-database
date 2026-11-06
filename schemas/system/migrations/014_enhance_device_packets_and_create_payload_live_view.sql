@@ -38,6 +38,7 @@ CREATE INDEX IF NOT EXISTS "idx_device_packets_deveui_created"
   ON system_schema."device_packets" ("dev_eui", "created_at" DESC);
 
 -- 2. Create view v_device_payload_live
+DROP VIEW IF EXISTS system_schema.v_device_payload_live CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_payload_live AS
 SELECT
   p."id",
