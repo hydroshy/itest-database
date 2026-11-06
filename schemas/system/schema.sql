@@ -536,7 +536,7 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "bw" INTEGER NOT NULL DEFAULT 125,
   "f_port" INTEGER NOT NULL DEFAULT 10,
   "preset_id" VARCHAR(50) NOT NULL DEFAULT 'env',
-  "flow_duration_minutes" INTEGER NOT NULL DEFAULT 30,
+  "flow_duration_minutes" NUMERIC NOT NULL DEFAULT 30,
   "auto_terminate" BOOLEAN NOT NULL DEFAULT TRUE,
   "uplink_interval_sec" INTEGER NOT NULL DEFAULT 10,
   "timed_actions" JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -793,6 +793,32 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batches" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb
 );
+
+-- Allow legacy orphan IDs, but protect all valid links and new batch writes.
+UPDATE system_schema.device_test_batches b
+SET simu_id = p.simu_id
+FROM system_schema.simulation_profiles p
+WHERE b.simu_id = p.id::text
+  AND NOT EXISTS (
+    SELECT 1 FROM system_schema.simulation_profiles canonical
+    WHERE canonical.simu_id = b.simu_id
+  );
+UPDATE system_schema.device_test_batches SET simu_id = NULL WHERE btrim(simu_id) = '';
+CREATE INDEX IF NOT EXISTS idx_dtest_batches_simu_id
+  ON system_schema.device_test_batches (simu_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'fk_device_test_batches_simulation_flow'
+      AND conrelid = 'system_schema.device_test_batches'::regclass
+  ) THEN
+    ALTER TABLE system_schema.device_test_batches
+      ADD CONSTRAINT fk_device_test_batches_simulation_flow
+      FOREIGN KEY (simu_id) REFERENCES system_schema.simulation_profiles (simu_id)
+      ON DELETE RESTRICT NOT VALID;
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS system_schema."device_test_batch_items" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),

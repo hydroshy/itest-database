@@ -529,4 +529,17 @@ for (const sql of [autoCheckProfileSql, updatedSystemSchemaSql]) {
   assert.ok(sql.includes('reference_item_code IS NULL AND reference_fw_version IS NULL'), 'Reference product identity must be paired');
 }
 
+// Simulation flows retain seconds and protect test-batch references.
+const flowLinksMigration = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/019_protect_simulation_flow_batch_links.sql'), 'utf8');
+for (const sql of [flowLinksMigration, updatedSystemSchemaSql]) {
+  assert.ok(sql.includes('fk_device_test_batches_simulation_flow'), 'Missing flow/batch foreign key');
+  assert.ok(sql.includes('ON DELETE RESTRICT NOT VALID'), 'Protect deletes without discarding legacy orphans');
+  assert.ok(sql.includes('idx_dtest_batches_simu_id'), 'Missing flow/batch lookup index');
+  assert.ok(sql.includes('WHERE canonical.simu_id = b.simu_id'), 'UUID normalization must prefer canonical IDs');
+}
+assert.ok(flowLinksMigration.includes('TYPE NUMERIC USING flow_duration_minutes::numeric'), 'Migration must preserve fractional minutes');
+assert.ok(updatedSystemSchemaSql.includes('"flow_duration_minutes" NUMERIC NOT NULL'), 'Fresh schema must preserve fractional minutes');
+assert.ok(!flowLinksMigration.includes('DROP VIEW IF EXISTS system_schema.v_simulation_flows CASCADE'), 'Do not drop unrelated dependent views');
+console.log('✓ Flow duration precision and batch link protection validated');
+
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
