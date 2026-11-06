@@ -48,24 +48,33 @@ CREATE TABLE IF NOT EXISTS plugins_schema."decoder_scripts" (
   CONSTRAINT "UQ_decoder_scripts_sku_long_fw" UNIQUE ("sku", "long_fw")
 );
 
--- Indices
-CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_sku" ON plugins_schema."decoder_scripts" ("sku");
-CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_long_fw" ON plugins_schema."decoder_scripts" ("long_fw");
-CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_sku_long_fw" ON plugins_schema."decoder_scripts" ("sku", "long_fw");
-CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_is_active" ON plugins_schema."decoder_scripts" ("is_active");
-CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_sample_decoded" ON plugins_schema."decoder_scripts" USING GIN ("sample_decoded");
-CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_metadata" ON plugins_schema."decoder_scripts" USING GIN ("metadata");
+-- Indices and Trigger only if decoder_scripts is a base table (not a view pointing to decoder.decoder_scripts)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'plugins_schema' AND c.relname = 'decoder_scripts' AND c.relkind = 'r'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_sku" ON plugins_schema."decoder_scripts" ("sku");
+    CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_long_fw" ON plugins_schema."decoder_scripts" ("long_fw");
+    CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_sku_long_fw" ON plugins_schema."decoder_scripts" ("sku", "long_fw");
+    CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_is_active" ON plugins_schema."decoder_scripts" ("is_active");
+    CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_sample_decoded" ON plugins_schema."decoder_scripts" USING GIN ("sample_decoded");
+    CREATE INDEX IF NOT EXISTS "idx_decoder_scripts_metadata" ON plugins_schema."decoder_scripts" USING GIN ("metadata");
 
--- Trigger
-DROP TRIGGER IF EXISTS "trg_decoder_scripts_updated_at" ON plugins_schema."decoder_scripts";
-CREATE TRIGGER "trg_decoder_scripts_updated_at"
-  BEFORE UPDATE ON plugins_schema."decoder_scripts"
-  FOR EACH ROW
-  EXECUTE FUNCTION plugins_schema.set_current_timestamp_updated_at();
+    DROP TRIGGER IF EXISTS "trg_decoder_scripts_updated_at" ON plugins_schema."decoder_scripts";
+    CREATE TRIGGER "trg_decoder_scripts_updated_at"
+      BEFORE UPDATE ON plugins_schema."decoder_scripts"
+      FOR EACH ROW
+      EXECUTE FUNCTION plugins_schema.set_current_timestamp_updated_at();
+  END IF;
+END $$;
 
 -- 4. View plugins_schema.v_memmap_decoders
 -- Joins memmap_manager.memmap_profiles with plugins_schema.decoder_scripts
 -- Enables UI and Backend to query SKU/LONG_FW coverage and decoder configuration status
+DROP VIEW IF EXISTS plugins_schema.v_memmap_decoders CASCADE;
 CREATE OR REPLACE VIEW plugins_schema.v_memmap_decoders AS
 SELECT 
   mp.id AS memmap_profile_id,

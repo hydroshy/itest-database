@@ -33,18 +33,26 @@ COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."started_at" IS 'Th
 COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."ended_at" IS 'Thời điểm kết thúc phiên test';
 COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."summary" IS 'Tổng hợp kết quả kiểm thử dạng JSONB (packet_count, pass_rate, avg_rssi, avg_snr...)';
 
--- Trigger for auto updated_at
-DROP TRIGGER IF EXISTS trg_gw_test_sessions_updated_at ON lorawan_chirpstack."gateway_test_sessions";
-CREATE TRIGGER trg_gw_test_sessions_updated_at
-BEFORE UPDATE ON lorawan_chirpstack."gateway_test_sessions"
-FOR EACH ROW
-EXECUTE FUNCTION lorawan_chirpstack.set_current_timestamp_updated_at();
+-- Trigger & Indexes only if gateway_test_sessions is a base table (not a view pointing to devices.gateway_test_sessions)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'lorawan_chirpstack' AND c.relname = 'gateway_test_sessions' AND c.relkind = 'r'
+  ) THEN
+    DROP TRIGGER IF EXISTS trg_gw_test_sessions_updated_at ON lorawan_chirpstack."gateway_test_sessions";
+    CREATE TRIGGER trg_gw_test_sessions_updated_at
+      BEFORE UPDATE ON lorawan_chirpstack."gateway_test_sessions"
+      FOR EACH ROW
+      EXECUTE FUNCTION lorawan_chirpstack.set_current_timestamp_updated_at();
 
--- Indexes for gateway_test_sessions
-CREATE INDEX IF NOT EXISTS "idx_gw_test_sessions_gateway_id" ON lorawan_chirpstack."gateway_test_sessions"("gateway_id");
-CREATE INDEX IF NOT EXISTS "idx_gw_test_sessions_status" ON lorawan_chirpstack."gateway_test_sessions"("status");
-CREATE INDEX IF NOT EXISTS "idx_gw_test_sessions_started_at" ON lorawan_chirpstack."gateway_test_sessions"("started_at" DESC);
-CREATE INDEX IF NOT EXISTS "idx_gw_test_sessions_summary_gin" ON lorawan_chirpstack."gateway_test_sessions" USING GIN ("summary");
+    CREATE INDEX IF NOT EXISTS "idx_gw_test_sessions_gateway_id" ON lorawan_chirpstack."gateway_test_sessions"("gateway_id");
+    CREATE INDEX IF NOT EXISTS "idx_gw_test_sessions_status" ON lorawan_chirpstack."gateway_test_sessions"("status");
+    CREATE INDEX IF NOT EXISTS "idx_gw_test_sessions_started_at" ON lorawan_chirpstack."gateway_test_sessions"("started_at" DESC);
+    CREATE INDEX IF NOT EXISTS "idx_gw_test_sessions_summary_gin" ON lorawan_chirpstack."gateway_test_sessions" USING GIN ("summary");
+  END IF;
+END $$;
 
 -- Runtime privileges
 DO $$
