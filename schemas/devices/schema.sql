@@ -29,6 +29,16 @@ CREATE TABLE IF NOT EXISTS devices.devices (
     CONSTRAINT uq_devices_dev_eui UNIQUE (dev_eui)
 );
 
+ALTER TABLE devices.devices
+    ADD COLUMN IF NOT EXISTS dev_eui VARCHAR(32),
+    ADD COLUMN IF NOT EXISTS serial_number VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS sku VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS so_id UUID,
+    ADD COLUMN IF NOT EXISTS so_number VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS wa_id UUID,
+    ADD COLUMN IF NOT EXISTS wa_number VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS item_code VARCHAR(100);
+
 CREATE INDEX IF NOT EXISTS idx_devices_dev_eui ON devices.devices(dev_eui);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_serial_number ON devices.devices(serial_number) WHERE serial_number IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_devices_network_id ON devices.devices(network_id);
@@ -109,8 +119,17 @@ CREATE TABLE IF NOT EXISTS devices.gateway_test_sessions (
     end_time TIMESTAMPTZ,
     summary JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE devices.gateway_test_sessions
+    ADD COLUMN IF NOT EXISTS device_id VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS gateway_name VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS device_name VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS network_server_id UUID,
+    ADD COLUMN IF NOT EXISTS application_id VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS device_profile_id VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(100);
 
 CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_gateway_id ON devices.gateway_test_sessions(gateway_id);
 CREATE INDEX IF NOT EXISTS idx_devices_gw_sessions_gateway_name ON devices.gateway_test_sessions(gateway_name);
@@ -191,6 +210,10 @@ CREATE TABLE IF NOT EXISTS devices.device_packets (
     received_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE devices.device_packets
+    ADD COLUMN IF NOT EXISTS dev_eui VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS sf INTEGER;
 
 CREATE INDEX IF NOT EXISTS idx_devices_packets_device_id ON devices.device_packets(device_id);
 CREATE INDEX IF NOT EXISTS idx_devices_packets_dev_eui ON devices.device_packets(dev_eui);

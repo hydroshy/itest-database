@@ -458,6 +458,17 @@ CREATE TABLE IF NOT EXISTS system_schema."device_packets" (
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure enhanced telemetry columns exist if table was previously created without them
+ALTER TABLE system_schema."device_packets"
+  ALTER COLUMN "device_id" DROP NOT NULL;
+
+ALTER TABLE system_schema."device_packets"
+  ADD COLUMN IF NOT EXISTS "dev_eui" VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS "rssi" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "snr" DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS "sf" VARCHAR(20),
+  ADD COLUMN IF NOT EXISTS "frequency" DOUBLE PRECISION;
+
 CREATE INDEX IF NOT EXISTS "idx_device_packets_dev_eui" ON system_schema."device_packets"("dev_eui");
 CREATE INDEX IF NOT EXISTS "idx_device_packets_created_desc" ON system_schema."device_packets"("created_at" DESC);
 CREATE INDEX IF NOT EXISTS "idx_device_packets_deveui_created" ON system_schema."device_packets"("dev_eui", "created_at" DESC);
@@ -531,6 +542,10 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE system_schema."simulation_profiles"
+  ADD COLUMN IF NOT EXISTS "sku" VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS "flow_blocks" JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_simu_id" ON system_schema."simulation_profiles"("simu_id");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_item_code" ON system_schema."simulation_profiles"("item_code");
@@ -652,6 +667,12 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_registrations" (
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE system_schema."device_test_registrations"
+  ADD COLUMN IF NOT EXISTS "application_id" VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS "device_profile_id" VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS "is_reference" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "long_fw" VARCHAR(255);
 
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_dev_eui" ON system_schema."device_test_registrations"("dev_eui");
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_serial_number" ON system_schema."device_test_registrations"("serial_number");
