@@ -542,4 +542,13 @@ assert.ok(updatedSystemSchemaSql.includes('"flow_duration_minutes" NUMERIC NOT N
 assert.ok(!flowLinksMigration.includes('DROP VIEW IF EXISTS system_schema.v_simulation_flows CASCADE'), 'Do not drop unrelated dependent views');
 console.log('✓ Flow duration precision and batch link protection validated');
 
+// Simulation devices view must exclude templates and mock data.
+const simDevicesMigration = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/020_filter_simulation_devices_exclude_templates.sql'), 'utf8');
+for (const sql of [simDevicesMigration, updatedSystemSchemaSql]) {
+  assert.ok(sql.includes('v_simulation_devices'), 'Missing v_simulation_devices view definition');
+  assert.ok(sql.includes("status'' = ''simulation''") || sql.includes("status\" = 'simulation'"), 'v_simulation_devices must filter status = simulation only');
+  assert.ok(!sql.includes("''template''") && !sql.includes("'template'"), 'v_simulation_devices must never include template status');
+}
+console.log('✓ Simulation devices view cleanly excludes templates and mock data');
+
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

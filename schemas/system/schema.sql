@@ -1093,4 +1093,40 @@ BEGIN
   END IF;
 END $$;
 
+-- 16. View for Simulation Devices (excludes template records)
+DROP VIEW IF EXISTS system_schema.v_simulation_devices CASCADE;
+CREATE OR REPLACE VIEW system_schema.v_simulation_devices AS
+SELECT
+  d."id",
+  d."serial_number",
+  d."network_id",
+  d."device_name",
+  d."device_type",
+  d."plugin_id",
+  d."so_number",
+  d."wa_number",
+  d."item_code",
+  d."status",
+  d."metadata",
+  d."created_at",
+  d."updated_at"
+FROM system_schema."devices" d
+WHERE d."status" = 'simulation';
+
+COMMENT ON VIEW system_schema.v_simulation_devices IS 'View danh sách các thiết bị kiểm thử simulation thực tế (không bao gồm template)';
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_system_user') THEN
+    GRANT SELECT ON system_schema.v_simulation_devices TO itest_system_user;
+  END IF;
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugins_user') THEN
+    GRANT SELECT ON system_schema.v_simulation_devices TO itest_plugins_user;
+  END IF;
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_ops_user') THEN
+    GRANT SELECT ON system_schema.v_simulation_devices TO itest_ops_user;
+  END IF;
+END $$;
+
+
 
