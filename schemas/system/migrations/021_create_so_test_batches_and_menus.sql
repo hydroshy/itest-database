@@ -207,9 +207,11 @@ FROM system_schema."device_test_batches" b;
 COMMENT ON VIEW system_schema.v_available_test_batches IS 'Danh sách các Test Batch thực tế sẵn có trên hệ thống để gán vào SO';
 
 -- 5.4 Cross-schema compatibility views under traceability_manager
+DROP VIEW IF EXISTS traceability_manager."so_test_batches" CASCADE;
 CREATE OR REPLACE VIEW traceability_manager."so_test_batches" AS
 SELECT * FROM system_schema."so_test_batches";
 
+DROP VIEW IF EXISTS traceability_manager."v_so_with_test_batches" CASCADE;
 CREATE OR REPLACE VIEW traceability_manager."v_so_with_test_batches" AS
 SELECT * FROM system_schema.v_so_with_test_batches;
 
