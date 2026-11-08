@@ -53,6 +53,7 @@ const requiredFiles = [
   'schemas/devices/migrations/006_add_packet_spreading_factor.sql',
   'schemas/lorawan-chirpstack/migrations/004_extend_gateway_test_sessions_metadata.sql',
   'schemas/lorawan-chirpstack/migrations/005_add_app_and_device_profile_to_network_servers.sql',
+  'schemas/memmap-manager/migrations/005_identify_by_item_code_and_fw_version.sql',
   'schemas/system/migrations/021_create_so_test_batches_and_menus.sql',
   'scripts/migrate.js'
 ];
@@ -566,6 +567,7 @@ for (const sql of [systemMigration021Sql, freshSystemSchemaSql]) {
   assert.ok(sql.includes('"so_id" UUID NOT NULL REFERENCES traceability_manager."traceability_so"'), 'Missing so_id foreign key');
   assert.ok(sql.includes('"batch_id" UUID NOT NULL REFERENCES system_schema."device_test_batches"'), 'Missing batch_id foreign key');
   assert.ok(sql.includes('uq_so_test_batches_so_batch UNIQUE ("so_id", "batch_id")'), 'Missing unique constraint on so_id and batch_id');
+  assert.ok(sql.includes('"item_code" VARCHAR(100)'), 'Missing item_code column in so_test_batches');
   assert.ok(sql.includes('v_so_test_batches_detail'), 'Missing v_so_test_batches_detail view');
   assert.ok(sql.includes('v_so_with_test_batches'), 'Missing v_so_with_test_batches view');
   assert.ok(sql.includes('v_available_test_batches'), 'Missing v_available_test_batches view');
@@ -573,10 +575,24 @@ for (const sql of [systemMigration021Sql, freshSystemSchemaSql]) {
   assert.ok(sql.includes('GRANT ALL PRIVILEGES ON TABLE system_schema."so_test_batches" TO itest_plugins_user'), 'Missing itest_plugins_user grant on so_test_batches');
 }
 
-assert.ok(systemMigration021Sql.includes('so-test-batch:so-test-batch'), 'Missing menu item so-test-batch:so-test-batch in migration 021');
-assert.ok(systemMigration021Sql.includes('/plugins/so-test-batch'), 'Missing route /plugins/so-test-batch in migration 021');
+assert.ok(systemMigration021Sql.includes('testing:so-test-batch'), 'Missing menu item testing:so-test-batch in migration 021');
+assert.ok(systemMigration021Sql.includes('/plugins/testing?tab=so-test-batch'), 'Missing route /plugins/testing?tab=so-test-batch in migration 021');
 assert.ok(systemMigration021Sql.includes('so-test-batch:link:create'), 'Missing so-test-batch:link:create permission in migration 021');
 assert.ok(systemMigration021Sql.includes('so-test-batch:link:delete'), 'Missing so-test-batch:link:delete permission in migration 021');
-console.log('✓ System migration 021 and schema.sql so_test_batches validated');
+console.log('✓ System migration 021 and schema.sql so_test_batches validated (including testing:so-test-batch menu and multi-item_code support)');
+
+// 30. Validate Memmap Manager Migration 005 for item_code, fw_version, and validation
+const memmapMigration005Sql = fs.readFileSync(path.join(__dirname, 'schemas/memmap-manager/migrations/005_identify_by_item_code_and_fw_version.sql'), 'utf8');
+const memmapSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/memmap-manager/schema.sql'), 'utf8');
+
+assert.ok(memmapSchemaSql.includes('005_identify_by_item_code_and_fw_version.sql'), 'Missing migration 005 in memmap-manager/schema.sql');
+assert.ok(memmapMigration005Sql.includes('ADD COLUMN "item_code" VARCHAR(100)'), 'Missing item_code column in memmap migration 005');
+assert.ok(memmapMigration005Sql.includes('ADD COLUMN "fw_version" VARCHAR(50)'), 'Missing fw_version column in memmap migration 005');
+assert.ok(memmapMigration005Sql.includes("chk_memmap_profiles_fw_version"), 'Missing CHECK constraint chk_memmap_profiles_fw_version');
+assert.ok(memmapMigration005Sql.includes("^[0-9]F[0-9]{4}$"), 'Missing regex ^[0-9]F[0-9]{4}$ validation for fw_version in memmap migration 005');
+assert.ok(memmapMigration005Sql.includes('idx_memmap_profiles_item_code_fw_version'), 'Missing unique index on (item_code, fw_version)');
+assert.ok(memmapMigration005Sql.includes('CREATE OR REPLACE VIEW memmap_manager.v_memmap_profiles'), 'Missing v_memmap_profiles view');
+assert.ok(memmapMigration005Sql.includes('GRANT ALL PRIVILEGES ON TABLE memmap_manager."memmap_profiles" TO itest_system_user'), 'Missing grant on memmap_profiles to itest_system_user');
+console.log('✓ Memmap migration 005 (item_code, fw_version regex validation) validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

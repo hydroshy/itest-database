@@ -1138,6 +1138,7 @@ CREATE TABLE IF NOT EXISTS system_schema."so_test_batches" (
   "batch_id" UUID NOT NULL REFERENCES system_schema."device_test_batches"("id") ON DELETE CASCADE,
   "so_number" VARCHAR(50) NOT NULL,
   "batch_code" VARCHAR(100) NOT NULL,
+  "item_code" VARCHAR(100),
   "notes" TEXT,
   "created_by" VARCHAR(100) NOT NULL DEFAULT 'operator',
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1147,12 +1148,14 @@ CREATE TABLE IF NOT EXISTS system_schema."so_test_batches" (
   CONSTRAINT uq_so_test_batches_number_code UNIQUE ("so_number", "batch_code")
 );
 
-COMMENT ON TABLE system_schema."so_test_batches" IS 'Bảng liên kết quan hệ 1-N giữa Đơn Bán Hàng (SO) và các Đợt kiểm thử lô (Device Test Batches)';
+COMMENT ON TABLE system_schema."so_test_batches" IS 'Bảng liên kết quan hệ 1-N giữa Đơn Bán Hàng (SO) và các Đợt kiểm thử lô (Device Test Batches) theo từng ITEM_CODE';
 
 CREATE INDEX IF NOT EXISTS "idx_so_test_batches_so_id" ON system_schema."so_test_batches" ("so_id");
 CREATE INDEX IF NOT EXISTS "idx_so_test_batches_batch_id" ON system_schema."so_test_batches" ("batch_id");
 CREATE INDEX IF NOT EXISTS "idx_so_test_batches_so_number" ON system_schema."so_test_batches" ("so_number");
 CREATE INDEX IF NOT EXISTS "idx_so_test_batches_batch_code" ON system_schema."so_test_batches" ("batch_code");
+CREATE INDEX IF NOT EXISTS "idx_so_test_batches_item_code" ON system_schema."so_test_batches" ("item_code");
+CREATE INDEX IF NOT EXISTS "idx_so_test_batches_so_item" ON system_schema."so_test_batches" ("so_id", "item_code");
 CREATE INDEX IF NOT EXISTS "idx_so_test_batches_created_at" ON system_schema."so_test_batches" ("created_at" DESC);
 
 CREATE OR REPLACE FUNCTION system_schema.sync_so_test_batches_codes()
@@ -1162,7 +1165,10 @@ BEGIN
     SELECT so_number INTO NEW.so_number FROM traceability_manager.traceability_so WHERE id = NEW.so_id;
   END IF;
   IF NEW.batch_code IS NULL OR NEW.batch_code = '' THEN
-    SELECT batch_code INTO NEW.batch_code FROM system_schema.device_test_batches WHERE id = NEW.batch_id;
+    SELECT batch_code, item_code INTO NEW.batch_code, NEW.item_code FROM system_schema.device_test_batches WHERE id = NEW.batch_id;
+  END IF;
+  IF NEW.item_code IS NULL OR NEW.item_code = '' THEN
+    SELECT item_code INTO NEW.item_code FROM system_schema.device_test_batches WHERE id = NEW.batch_id;
   END IF;
   RETURN NEW;
 END;
@@ -1193,7 +1199,7 @@ SELECT
   sotb."batch_id",
   b."batch_code",
   b."batch_name",
-  b."item_code",
+  COALESCE(sotb."item_code", b."item_code") AS "item_code",
   b."long_fw",
   b."fw_version",
   b."simu_id",
@@ -1234,7 +1240,7 @@ SELECT
         'batchId', b."id",
         'batchCode', b."batch_code",
         'batchName', b."batch_name",
-        'itemCode', b."item_code",
+        'itemCode', COALESCE(sotb."item_code", b."item_code"),
         'longFw', b."long_fw",
         'fwVersion', b."fw_version",
         'status', b."status",
@@ -1246,6 +1252,15 @@ SELECT
     ) FILTER (WHERE b."id" IS NOT NULL),
     '[]'::jsonb
   ) AS "test_batches",
+  COALESCE(
+    (
+      SELECT JSONB_AGG(DISTINCT sub_b."item_code")
+      FROM system_schema."so_test_batches" sub_sotb
+      JOIN system_schema."device_test_batches" sub_b ON sub_sotb."batch_id" = sub_b."id"
+      WHERE sub_sotb."so_id" = so."id" AND sub_b."item_code" IS NOT NULL
+    ),
+    '[]'::jsonb
+  ) AS "item_codes",
   COUNT(sotb."id")::int AS "test_batch_count"
 FROM traceability_manager."traceability_so" so
 LEFT JOIN system_schema."so_test_batches" sotb ON so."id" = sotb."so_id"
