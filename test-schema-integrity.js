@@ -53,6 +53,7 @@ const requiredFiles = [
   'schemas/devices/migrations/006_add_packet_spreading_factor.sql',
   'schemas/lorawan-chirpstack/migrations/004_extend_gateway_test_sessions_metadata.sql',
   'schemas/lorawan-chirpstack/migrations/005_add_app_and_device_profile_to_network_servers.sql',
+  'schemas/system/migrations/021_create_so_test_batches_and_menus.sql',
   'scripts/migrate.js'
 ];
 
@@ -544,11 +545,38 @@ console.log('✓ Flow duration precision and batch link protection validated');
 
 // Simulation devices view must exclude templates and mock data.
 const simDevicesMigration = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/020_filter_simulation_devices_exclude_templates.sql'), 'utf8');
+const extractSimView = (str) => {
+  const match = str.match(/CREATE OR REPLACE VIEW system_schema\.v_simulation_devices[\s\S]*?(?:;|\$\$)/);
+  return match ? match[0] : str;
+};
 for (const sql of [simDevicesMigration, updatedSystemSchemaSql]) {
   assert.ok(sql.includes('v_simulation_devices'), 'Missing v_simulation_devices view definition');
-  assert.ok(sql.includes("status'' = ''simulation''") || sql.includes("status\" = 'simulation'"), 'v_simulation_devices must filter status = simulation only');
-  assert.ok(!sql.includes("''template''") && !sql.includes("'template'"), 'v_simulation_devices must never include template status');
+  assert.ok(sql.includes("status'' = ''simulation''") || sql.includes("status\" = 'simulation'") || sql.includes("status\" = ''simulation''"), 'v_simulation_devices must filter status = simulation only');
+  const viewSql = extractSimView(sql);
+  assert.ok(!viewSql.includes("''template''") && !viewSql.includes("'template'"), 'v_simulation_devices must never include template status');
 }
 console.log('✓ Simulation devices view cleanly excludes templates and mock data');
+
+// 29. Validate System Migration 021 for so_test_batches and menus
+const systemMigration021Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/021_create_so_test_batches_and_menus.sql'), 'utf8');
+const freshSystemSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
+
+for (const sql of [systemMigration021Sql, freshSystemSchemaSql]) {
+  assert.ok(sql.includes('CREATE TABLE IF NOT EXISTS system_schema."so_test_batches"'), 'Missing so_test_batches table');
+  assert.ok(sql.includes('"so_id" UUID NOT NULL REFERENCES traceability_manager."traceability_so"'), 'Missing so_id foreign key');
+  assert.ok(sql.includes('"batch_id" UUID NOT NULL REFERENCES system_schema."device_test_batches"'), 'Missing batch_id foreign key');
+  assert.ok(sql.includes('uq_so_test_batches_so_batch UNIQUE ("so_id", "batch_id")'), 'Missing unique constraint on so_id and batch_id');
+  assert.ok(sql.includes('v_so_test_batches_detail'), 'Missing v_so_test_batches_detail view');
+  assert.ok(sql.includes('v_so_with_test_batches'), 'Missing v_so_with_test_batches view');
+  assert.ok(sql.includes('v_available_test_batches'), 'Missing v_available_test_batches view');
+  assert.ok(sql.includes('GRANT ALL PRIVILEGES ON TABLE system_schema."so_test_batches" TO itest_system_user'), 'Missing itest_system_user grant on so_test_batches');
+  assert.ok(sql.includes('GRANT ALL PRIVILEGES ON TABLE system_schema."so_test_batches" TO itest_plugins_user'), 'Missing itest_plugins_user grant on so_test_batches');
+}
+
+assert.ok(systemMigration021Sql.includes('so-test-batch:so-test-batch'), 'Missing menu item so-test-batch:so-test-batch in migration 021');
+assert.ok(systemMigration021Sql.includes('/plugins/so-test-batch'), 'Missing route /plugins/so-test-batch in migration 021');
+assert.ok(systemMigration021Sql.includes('so-test-batch:link:create'), 'Missing so-test-batch:link:create permission in migration 021');
+assert.ok(systemMigration021Sql.includes('so-test-batch:link:delete'), 'Missing so-test-batch:link:delete permission in migration 021');
+console.log('✓ System migration 021 and schema.sql so_test_batches validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

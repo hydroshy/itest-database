@@ -5,7 +5,7 @@
 -- Target: v_simulation_devices
 -- Description:
 --   Update view system_schema.v_simulation_devices to ONLY include devices
---   with status = 'simulation'. Explicitly exclude 'template' so flow simulation
+--   with status = 'simulation'. Explicitly exclude template records so flow simulation
 --   templates are never exposed as mock/phantom simulation devices.
 -- ==============================================================================
 
