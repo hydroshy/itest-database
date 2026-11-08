@@ -1148,6 +1148,9 @@ CREATE TABLE IF NOT EXISTS system_schema."so_test_batches" (
   CONSTRAINT uq_so_test_batches_number_code UNIQUE ("so_number", "batch_code")
 );
 
+-- Idempotently ensure item_code column exists if table was pre-created
+ALTER TABLE system_schema."so_test_batches" ADD COLUMN IF NOT EXISTS "item_code" VARCHAR(100);
+
 COMMENT ON TABLE system_schema."so_test_batches" IS 'Bảng liên kết quan hệ 1-N giữa Đơn Bán Hàng (SO) và các Đợt kiểm thử lô (Device Test Batches) theo từng ITEM_CODE';
 
 CREATE INDEX IF NOT EXISTS "idx_so_test_batches_so_id" ON system_schema."so_test_batches" ("so_id");
