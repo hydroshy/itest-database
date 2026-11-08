@@ -92,6 +92,7 @@ EXECUTE FUNCTION system_schema.set_current_timestamp_updated_at();
 
 -- 5. Create Views
 -- 5.1 Detailed Link View
+DROP VIEW IF EXISTS system_schema.v_so_test_batches_detail CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_so_test_batches_detail AS
 SELECT
   sotb."id" AS "link_id",
@@ -130,6 +131,7 @@ JOIN system_schema."device_test_batches" b ON sotb."batch_id" = b."id";
 COMMENT ON VIEW system_schema.v_so_test_batches_detail IS 'View chi tiết liên kết giữa Đơn Bán Hàng (SO) và Device Test Batch kèm thông số kỹ thuật';
 
 -- 5.2 Aggregated SO View for Tabulator (supports 1 SO having multiple Test Batches for different ITEM_CODEs)
+DROP VIEW IF EXISTS system_schema.v_so_with_test_batches CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_so_with_test_batches AS
 SELECT
   so."id" AS "so_id",
@@ -177,6 +179,7 @@ GROUP BY so."id", so."so_number", so."customer_name", so."customer_email", so."p
 COMMENT ON VIEW system_schema.v_so_with_test_batches IS 'View danh sách SO kèm mảng JSON test_batches và danh sách item_codes hỗ trợ hiển thị trên bảng Tabulator của tab SO Test Batch trong plugin LoRaWAN Testing';
 
 -- 5.3 Available Test Batches for Modal Linking
+DROP VIEW IF EXISTS system_schema.v_available_test_batches CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_available_test_batches AS
 SELECT
   b."id",

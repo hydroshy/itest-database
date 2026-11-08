@@ -1190,6 +1190,7 @@ FOR EACH ROW
 EXECUTE FUNCTION system_schema.set_current_timestamp_updated_at();
 
 -- Detailed View
+DROP VIEW IF EXISTS system_schema.v_so_test_batches_detail CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_so_test_batches_detail AS
 SELECT
   sotb."id" AS "link_id",
@@ -1226,6 +1227,7 @@ JOIN traceability_manager."traceability_so" so ON sotb."so_id" = so."id"
 JOIN system_schema."device_test_batches" b ON sotb."batch_id" = b."id";
 
 -- Aggregated View for Tabulator
+DROP VIEW IF EXISTS system_schema.v_so_with_test_batches CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_so_with_test_batches AS
 SELECT
   so."id" AS "so_id",
@@ -1271,6 +1273,7 @@ LEFT JOIN system_schema."device_test_batches" b ON sotb."batch_id" = b."id"
 GROUP BY so."id", so."so_number", so."customer_name", so."customer_email", so."partner_email", so."notes", so."created_at", so."updated_at";
 
 -- Available Batches View
+DROP VIEW IF EXISTS system_schema.v_available_test_batches CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_available_test_batches AS
 SELECT
   b."id",
