@@ -55,6 +55,7 @@ const requiredFiles = [
   'schemas/lorawan-chirpstack/migrations/005_add_app_and_device_profile_to_network_servers.sql',
   'schemas/memmap-manager/migrations/005_identify_by_item_code_and_fw_version.sql',
   'schemas/system/migrations/021_create_so_test_batches_and_menus.sql',
+  'schemas/system/migrations/022_add_avg_metrics_to_device_test_batch_items.sql',
   'scripts/migrate.js'
 ];
 
@@ -594,5 +595,16 @@ assert.ok(memmapMigration005Sql.includes('idx_memmap_profiles_item_code_fw_versi
 assert.ok(memmapMigration005Sql.includes('CREATE OR REPLACE VIEW memmap_manager.v_memmap_profiles'), 'Missing v_memmap_profiles view');
 assert.ok(memmapMigration005Sql.includes('GRANT ALL PRIVILEGES ON TABLE memmap_manager."memmap_profiles" TO itest_system_user'), 'Missing grant on memmap_profiles to itest_system_user');
 console.log('✓ Memmap migration 005 (item_code, fw_version regex validation) validated');
+
+// 31. Validate System Migration 022 for avg_cycle, avg_rssi, avg_snr in device_test_batch_items and views
+const systemMigration022Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/022_add_avg_metrics_to_device_test_batch_items.sql'), 'utf8');
+assert.ok(systemMigration022Sql.includes('ADD COLUMN IF NOT EXISTS "avg_cycle" NUMERIC(10,2)'), 'Missing avg_cycle column in migration 022');
+assert.ok(systemMigration022Sql.includes('ADD COLUMN IF NOT EXISTS "avg_rssi" NUMERIC(10,2)'), 'Missing avg_rssi column in migration 022');
+assert.ok(systemMigration022Sql.includes('ADD COLUMN IF NOT EXISTS "avg_snr" NUMERIC(10,2)'), 'Missing avg_snr column in migration 022');
+assert.ok(systemMigration022Sql.includes('v_device_test_batch_items_detail'), 'Missing v_device_test_batch_items_detail in migration 022');
+assert.ok(freshSystemSchemaSql.includes('"avg_cycle" NUMERIC(10,2)'), 'Missing avg_cycle in system schema.sql');
+assert.ok(freshSystemSchemaSql.includes('"avg_rssi" NUMERIC(10,2)'), 'Missing avg_rssi in system schema.sql');
+assert.ok(freshSystemSchemaSql.includes('"avg_snr" NUMERIC(10,2)'), 'Missing avg_snr in system schema.sql');
+console.log('✓ System migration 022 and schema.sql avg metrics (AVG_CYCLE, AVG_RSSI, AVG_SNR) validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
