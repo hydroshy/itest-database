@@ -23,15 +23,27 @@ CREATE TABLE IF NOT EXISTS lorawan_chirpstack."gateway_test_sessions" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-COMMENT ON TABLE lorawan_chirpstack."gateway_test_sessions" IS 'Bảng ghi nhận các phiên kiểm thử chất lượng truyền nhận của Gateway LoRaWAN';
-COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."id" IS 'Khóa chính UUID phiên kiểm thử';
-COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."gateway_id" IS 'Gateway EUI (định danh 16 ký tự hex của Gateway trên ChirpStack)';
-COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."gateway_name" IS 'Tên hiển thị của Gateway';
-COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."session_name" IS 'Tên hoặc nhãn phân loại phiên kiểm thử';
-COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."status" IS 'Trạng thái phiên: IN_PROGRESS, COMPLETED, FAILED, CANCELLED';
-COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."started_at" IS 'Thời điểm bắt đầu phiên test';
-COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."ended_at" IS 'Thời điểm kết thúc phiên test';
-COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."summary" IS 'Tổng hợp kết quả kiểm thử dạng JSONB (packet_count, pass_rate, avg_rssi, avg_snr...)';
+-- Trigger & Indexes & Comments only if gateway_test_sessions is a base table (not a view pointing to devices.gateway_test_sessions)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'lorawan_chirpstack' AND c.relname = 'gateway_test_sessions' AND c.relkind = 'r'
+  ) THEN
+    COMMENT ON TABLE lorawan_chirpstack."gateway_test_sessions" IS 'Bảng ghi nhận các phiên kiểm thử chất lượng truyền nhận của Gateway LoRaWAN';
+    COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."id" IS 'Khóa chính UUID phiên kiểm thử';
+    COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."gateway_id" IS 'Gateway EUI (định danh 16 ký tự hex của Gateway trên ChirpStack)';
+    COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."gateway_name" IS 'Tên hiển thị của Gateway';
+    COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."session_name" IS 'Tên hoặc nhãn phân loại phiên kiểm thử';
+    COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."status" IS 'Trạng thái phiên: IN_PROGRESS, COMPLETED, FAILED, CANCELLED';
+    COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."started_at" IS 'Thời điểm bắt đầu phiên test';
+    COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."ended_at" IS 'Thời điểm kết thúc phiên test';
+    COMMENT ON COLUMN lorawan_chirpstack."gateway_test_sessions"."summary" IS 'Tổng hợp kết quả kiểm thử dạng JSONB (packet_count, pass_rate, avg_rssi, avg_snr...)';
+  ELSE
+    COMMENT ON VIEW lorawan_chirpstack."gateway_test_sessions" IS 'View ghi nhận các phiên kiểm thử chất lượng truyền nhận của Gateway LoRaWAN';
+  END IF;
+END $$;
 
 -- Trigger & Indexes only if gateway_test_sessions is a base table (not a view pointing to devices.gateway_test_sessions)
 DO $$
