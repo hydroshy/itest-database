@@ -840,6 +840,9 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batch_items" (
   "packets_received" INTEGER NOT NULL DEFAULT 0,
   "rules_passed" INTEGER NOT NULL DEFAULT 0,
   "rules_failed" INTEGER NOT NULL DEFAULT 0,
+  "avg_cycle" NUMERIC(10,2),
+  "avg_rssi" NUMERIC(10,2),
+  "avg_snr" NUMERIC(10,2),
   "logs" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -915,6 +918,24 @@ SELECT
   i."packets_received",
   i."rules_passed",
   i."rules_failed",
+  COALESCE(
+    i."avg_cycle",
+    (i."comparison_result"->>'avg_cycle')::numeric,
+    (i."comparison_result"->>'avgCycle')::numeric,
+    (i."comparison_result"->>'cycle_seconds')::numeric
+  ) AS "avg_cycle",
+  COALESCE(
+    i."avg_rssi",
+    (i."comparison_result"->>'avg_rssi')::numeric,
+    (i."comparison_result"->>'avgRssi')::numeric,
+    (i."comparison_result"->>'rssi')::numeric
+  ) AS "avg_rssi",
+  COALESCE(
+    i."avg_snr",
+    (i."comparison_result"->>'avg_snr')::numeric,
+    (i."comparison_result"->>'avgSnr')::numeric,
+    (i."comparison_result"->>'snr')::numeric
+  ) AS "avg_snr",
   i."logs",
   i."created_at",
   i."updated_at"
