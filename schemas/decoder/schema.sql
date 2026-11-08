@@ -9,10 +9,11 @@ CREATE SCHEMA IF NOT EXISTS decoder;
 CREATE TABLE IF NOT EXISTS decoder.decoder_scripts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255),
-    sku VARCHAR(100) NOT NULL,
-    long_fw VARCHAR(100) NOT NULL,
+    sku VARCHAR(100),
+    long_fw VARCHAR(100),
     item_code VARCHAR(100),
     fw_code VARCHAR(50),
+    fw_version VARCHAR(50),
     protocol VARCHAR(50) NOT NULL DEFAULT 'lorawan',
     script TEXT NOT NULL,
     description TEXT,
@@ -24,8 +25,7 @@ CREATE TABLE IF NOT EXISTS decoder.decoder_scripts (
     metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_by VARCHAR(100) DEFAULT 'system',
-    CONSTRAINT uq_decoder_sku_long_fw UNIQUE (sku, long_fw)
+    created_by VARCHAR(100) DEFAULT 'system'
 );
 
 -- Indexes
@@ -33,7 +33,12 @@ CREATE INDEX IF NOT EXISTS idx_decoder_name ON decoder.decoder_scripts(name);
 CREATE INDEX IF NOT EXISTS idx_decoder_sku ON decoder.decoder_scripts(sku);
 CREATE INDEX IF NOT EXISTS idx_decoder_item_code ON decoder.decoder_scripts(item_code);
 CREATE INDEX IF NOT EXISTS idx_decoder_fw_code ON decoder.decoder_scripts(fw_code);
+CREATE INDEX IF NOT EXISTS idx_decoder_fw_version ON decoder.decoder_scripts(fw_version);
 CREATE INDEX IF NOT EXISTS idx_decoder_item_fw ON decoder.decoder_scripts(item_code, fw_code);
+CREATE INDEX IF NOT EXISTS idx_decoder_item_fw_version ON decoder.decoder_scripts(item_code, fw_version);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_idx_decoder_item_fw_version
+ON decoder.decoder_scripts (LOWER(TRIM(item_code)), LOWER(TRIM(COALESCE(fw_version, fw_code))))
+WHERE item_code IS NOT NULL AND (fw_version IS NOT NULL OR fw_code IS NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_decoder_protocol ON decoder.decoder_scripts(protocol);
 CREATE INDEX IF NOT EXISTS idx_decoder_is_active ON decoder.decoder_scripts(is_active);
 CREATE INDEX IF NOT EXISTS idx_decoder_sample_decoded_gin ON decoder.decoder_scripts USING GIN (sample_decoded);
@@ -58,11 +63,13 @@ FOR EACH ROW
 EXECUTE FUNCTION decoder.sync_decoder_script_name();
 
 -- 2. View: v_memmap_decoders
+DROP VIEW IF EXISTS decoder.v_memmap_decoders CASCADE;
 CREATE OR REPLACE VIEW decoder.v_memmap_decoders AS
 SELECT
+    COALESCE(p.item_code, d.item_code, p.sku, d.sku) AS item_code,
+    COALESCE(p.fw_version, d.fw_version, d.fw_code, p.long_fw, d.long_fw) AS fw_version,
     COALESCE(p.sku, d.sku) AS sku,
     COALESCE(p.long_fw, d.long_fw) AS long_fw,
-    d.item_code,
     d.fw_code,
     p.id AS memmap_profile_id,
     p.name AS memmap_profile_name,
@@ -81,4 +88,10 @@ SELECT
     d.updated_at AS decoder_updated_at
 FROM memmap_manager.memmap_profiles p
 FULL OUTER JOIN decoder.decoder_scripts d
-    ON p.sku = d.sku AND p.long_fw = d.long_fw;
+    ON (
+        (p.item_code IS NOT NULL AND d.item_code IS NOT NULL AND LOWER(p.item_code) = LOWER(d.item_code)
+         AND LOWER(COALESCE(p.fw_version, p.long_fw)) = LOWER(COALESCE(d.fw_version, d.fw_code, d.long_fw)))
+        OR
+        (p.sku IS NOT NULL AND d.sku IS NOT NULL AND LOWER(p.sku) = LOWER(d.sku)
+         AND LOWER(p.long_fw) = LOWER(d.long_fw))
+    );
