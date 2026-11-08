@@ -57,6 +57,8 @@ CREATE INDEX IF NOT EXISTS "idx_memmap_profiles_fw_version"
   ON memmap_manager."memmap_profiles" ("fw_version");
 
 -- 5. Views
+DROP VIEW IF EXISTS plugins_schema.v_memmap_profiles CASCADE;
+DROP VIEW IF EXISTS memmap_manager.v_memmap_profiles CASCADE;
 CREATE OR REPLACE VIEW memmap_manager.v_memmap_profiles AS
 SELECT
   p."id",
@@ -66,6 +68,10 @@ SELECT
   p."sku",
   p."long_fw",
   p."short_fw",
+  COALESCE(p."dec_check", true) AS "dec_check",
+  COALESCE(p."hex_check", true) AS "hex_check",
+  p."created_by",
+  p."date_create",
   p."description",
   p."source_format",
   p."created_at",

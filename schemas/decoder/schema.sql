@@ -28,6 +28,13 @@ CREATE TABLE IF NOT EXISTS decoder.decoder_scripts (
     created_by VARCHAR(100) DEFAULT 'system'
 );
 
+-- Ensure all columns exist before creating indexes if table already exists
+ALTER TABLE decoder.decoder_scripts ADD COLUMN IF NOT EXISTS item_code VARCHAR(100);
+ALTER TABLE decoder.decoder_scripts ADD COLUMN IF NOT EXISTS fw_code VARCHAR(50);
+ALTER TABLE decoder.decoder_scripts ADD COLUMN IF NOT EXISTS fw_version VARCHAR(50);
+ALTER TABLE decoder.decoder_scripts ALTER COLUMN sku DROP NOT NULL;
+ALTER TABLE decoder.decoder_scripts ALTER COLUMN long_fw DROP NOT NULL;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_decoder_name ON decoder.decoder_scripts(name);
 CREATE INDEX IF NOT EXISTS idx_decoder_sku ON decoder.decoder_scripts(sku);
