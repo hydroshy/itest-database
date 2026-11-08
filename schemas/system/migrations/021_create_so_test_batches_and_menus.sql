@@ -42,15 +42,7 @@ CREATE TABLE IF NOT EXISTS system_schema."so_test_batches" (
 );
 
 -- Idempotently ensure item_code column exists if table was pre-created
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'system_schema' AND table_name = 'so_test_batches' AND column_name = 'item_code'
-  ) THEN
-    ALTER TABLE system_schema."so_test_batches" ADD COLUMN "item_code" VARCHAR(100);
-  END IF;
-END $$;
+ALTER TABLE system_schema."so_test_batches" ADD COLUMN IF NOT EXISTS "item_code" VARCHAR(100);
 
 COMMENT ON TABLE system_schema."so_test_batches" IS 'Bảng liên kết quan hệ 1-N giữa Đơn Bán Hàng (SO) và các Đợt kiểm thử lô (Device Test Batches) theo từng ITEM_CODE';
 COMMENT ON COLUMN system_schema."so_test_batches"."so_id" IS 'Tham chiếu khóa ngoại đến traceability_manager.traceability_so(id) với CASCADE DELETE';
