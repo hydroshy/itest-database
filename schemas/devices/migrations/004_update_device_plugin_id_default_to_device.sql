@@ -59,15 +59,31 @@ CREATE VIEW devices.testing_devices AS SELECT * FROM devices.devices;
 
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'system_schema') THEN
-        DROP VIEW IF EXISTS system_schema.devices CASCADE;
-        CREATE VIEW system_schema.devices AS SELECT * FROM devices.devices;
+    IF EXISTS (
+        SELECT 1 FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'system_schema' AND c.relname = 'devices' AND c.relkind = 'v'
+    ) THEN
+        EXECUTE 'DROP VIEW system_schema.devices CASCADE';
+        EXECUTE 'CREATE VIEW system_schema.devices AS SELECT * FROM devices.devices';
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.devices TO itest_system_user, itest_plugins_user, itest_admin';
+    END IF;
 
-        DROP VIEW IF EXISTS system_schema.testing_devices CASCADE;
-        CREATE VIEW system_schema.testing_devices AS SELECT * FROM devices.devices;
-
-        GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.devices TO itest_system_user, itest_plugins_user, itest_admin;
-        GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.testing_devices TO itest_system_user, itest_plugins_user, itest_admin;
+    IF EXISTS (
+        SELECT 1 FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'system_schema' AND c.relname = 'testing_devices' AND c.relkind = 'v'
+    ) OR (
+        EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'system_schema') AND
+        NOT EXISTS (
+            SELECT 1 FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'system_schema' AND c.relname = 'testing_devices'
+        )
+    ) THEN
+        EXECUTE 'DROP VIEW IF EXISTS system_schema.testing_devices CASCADE';
+        EXECUTE 'CREATE VIEW system_schema.testing_devices AS SELECT * FROM devices.devices';
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.testing_devices TO itest_system_user, itest_plugins_user, itest_admin';
     END IF;
 END $$;
 

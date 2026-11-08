@@ -13,10 +13,41 @@ SET search_path TO system_schema, public;
 
 -- 0. Clean up legacy compatibility views if they exist to allow creating base tables
 DROP VIEW IF EXISTS system_schema.v_devices_traceability CASCADE;
-DROP VIEW IF EXISTS system_schema.testing_packets CASCADE;
-DROP VIEW IF EXISTS system_schema.testing_devices CASCADE;
-DROP VIEW IF EXISTS system_schema.device_packets CASCADE;
-DROP VIEW IF EXISTS system_schema.devices CASCADE;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'system_schema' AND c.relname = 'testing_packets' AND c.relkind = 'v'
+  ) THEN
+    EXECUTE 'DROP VIEW system_schema.testing_packets CASCADE';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'system_schema' AND c.relname = 'testing_devices' AND c.relkind = 'v'
+  ) THEN
+    EXECUTE 'DROP VIEW system_schema.testing_devices CASCADE';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'system_schema' AND c.relname = 'device_packets' AND c.relkind = 'v'
+  ) THEN
+    EXECUTE 'DROP VIEW system_schema.device_packets CASCADE';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'system_schema' AND c.relname = 'devices' AND c.relkind = 'v'
+  ) THEN
+    EXECUTE 'DROP VIEW system_schema.devices CASCADE';
+  END IF;
+END $$;
 
 -- 1. Create or ensure updated_at trigger helper in system_schema
 CREATE OR REPLACE FUNCTION system_schema.set_current_timestamp_updated_at()
