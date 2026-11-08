@@ -168,6 +168,21 @@ SELECT
   d.test_station,
   d.test_person,
   d.tested_at,
+  COALESCE(
+    (d.test_raw_data->'comparison'->>'avg_cycle')::numeric,
+    (d.test_raw_data->>'avg_cycle')::numeric,
+    (d.test_raw_data->>'avgCycle')::numeric
+  ) AS avg_cycle,
+  COALESCE(
+    (d.test_raw_data->'comparison'->>'avg_rssi')::numeric,
+    (d.test_raw_data->>'avg_rssi')::numeric,
+    (d.test_raw_data->>'avgRssi')::numeric
+  ) AS avg_rssi,
+  COALESCE(
+    (d.test_raw_data->'comparison'->>'avg_snr')::numeric,
+    (d.test_raw_data->>'avg_snr')::numeric,
+    (d.test_raw_data->>'avgSnr')::numeric
+  ) AS avg_snr,
   d.test_raw_data,
   (d.test_result = 'PASS') AS is_eligible_for_final_config,
   so.id AS so_id,
@@ -196,6 +211,61 @@ LEFT JOIN traceability_manager.traceability_wa wa ON d.wa_id = wa.id
 LEFT JOIN finalconfig_manager.finalconfig_execution_session fcs ON d.final_config_session_id = fcs.id;
 
 COMMENT ON VIEW traceability_manager.v_device_traceability_lifecycle IS 'Metabase Analytical View: Aggregates full device lifecycle spanning Sale Order (SO), Work Authorization (WA), Hardware Test CSV Results, and Final Configuration Session.';
+
+-- View: v_device_test_metrics_report (Traceability Testing Metrics & Packets Timeline)
+DROP VIEW IF EXISTS traceability_manager.v_device_test_metrics_report CASCADE;
+CREATE OR REPLACE VIEW traceability_manager.v_device_test_metrics_report AS
+SELECT
+  d.id AS device_id,
+  d.serial_number,
+  d.dev_eui,
+  so.so_number,
+  wa.wa_number,
+  COALESCE(d.item_code, wa.item_code) AS item_code,
+  d.hw_version,
+  d.fw_version,
+  d.test_result AS result,
+  COALESCE(d.test_person, 'tester') AS tested_by,
+  d.tested_at AS time_test,
+  d.test_station,
+  d.test_id,
+  COALESCE(
+    (d.test_raw_data->'comparison'->>'avg_cycle')::numeric,
+    (d.test_raw_data->>'avg_cycle')::numeric,
+    (d.test_raw_data->>'avgCycle')::numeric
+  ) AS avg_cycle,
+  COALESCE(
+    (d.test_raw_data->'comparison'->>'avg_rssi')::numeric,
+    (d.test_raw_data->>'avg_rssi')::numeric,
+    (d.test_raw_data->>'avgRssi')::numeric
+  ) AS avg_rssi,
+  COALESCE(
+    (d.test_raw_data->'comparison'->>'avg_snr')::numeric,
+    (d.test_raw_data->>'avg_snr')::numeric,
+    (d.test_raw_data->>'avgSnr')::numeric
+  ) AS avg_snr,
+  COALESCE(
+    (d.test_raw_data->'comparison'->>'packets_received')::int,
+    (d.test_raw_data->>'packets_received')::int,
+    jsonb_array_length(COALESCE(d.test_raw_data->'comparison'->'dut_packets', '[]'::jsonb))
+  ) AS packets_received,
+  COALESCE(
+    (d.test_raw_data->'comparison'->>'tolerance_pass')::boolean,
+    (d.test_raw_data->>'tolerance_pass')::boolean
+  ) AS tolerance_pass,
+  (d.test_raw_data->'comparison'->>'temp_delta')::numeric AS temp_delta,
+  (d.test_raw_data->'comparison'->>'hum_delta')::numeric AS hum_delta,
+  COALESCE(d.test_raw_data->'comparison'->'dut_packets', '[]'::jsonb) AS dut_packets,
+  COALESCE(d.test_raw_data->'comparison'->'reference_packets', '[]'::jsonb) AS reference_packets,
+  d.test_raw_data,
+  d.status,
+  d.created_at,
+  d.updated_at
+FROM traceability_manager.traceability_device d
+JOIN traceability_manager.traceability_so so ON d.so_id = so.id
+LEFT JOIN traceability_manager.traceability_wa wa ON d.wa_id = wa.id;
+
+COMMENT ON VIEW traceability_manager.v_device_test_metrics_report IS 'Báo cáo chi tiết metrics kiểm thử thiết bị (AVG_CYCLE, AVG_RSSI, AVG_SNR, dung sai chuẩn, timeline gói tin) cho Device Traceability';
 
 -- Analytical View for Tree: v_so_item_summary (SO -> ITEM-CODE -> SERIALS)
 DROP VIEW IF EXISTS traceability_manager.v_so_item_summary CASCADE;

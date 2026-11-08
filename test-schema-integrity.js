@@ -56,6 +56,7 @@ const requiredFiles = [
   'schemas/memmap-manager/migrations/005_identify_by_item_code_and_fw_version.sql',
   'schemas/system/migrations/021_create_so_test_batches_and_menus.sql',
   'schemas/system/migrations/022_add_avg_metrics_to_device_test_batch_items.sql',
+  'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql',
   'scripts/migrate.js'
 ];
 
@@ -606,5 +607,19 @@ assert.ok(freshSystemSchemaSql.includes('"avg_cycle" NUMERIC(10,2)'), 'Missing a
 assert.ok(freshSystemSchemaSql.includes('"avg_rssi" NUMERIC(10,2)'), 'Missing avg_rssi in system schema.sql');
 assert.ok(freshSystemSchemaSql.includes('"avg_snr" NUMERIC(10,2)'), 'Missing avg_snr in system schema.sql');
 console.log('✓ System migration 022 and schema.sql avg metrics (AVG_CYCLE, AVG_RSSI, AVG_SNR) validated');
+
+// 32. Validate Traceability Migration 006 for v_device_test_metrics_report
+const traceMigration006Sql = fs.readFileSync(path.join(__dirname, 'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql'), 'utf8');
+const traceSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/traceability-manager/schema.sql'), 'utf8');
+assert.ok(traceMigration006Sql.includes('v_device_test_metrics_report'), 'Missing v_device_test_metrics_report view in trace migration 006');
+assert.ok(traceMigration006Sql.includes('avg_cycle'), 'Missing avg_cycle in trace migration 006');
+assert.ok(traceMigration006Sql.includes('avg_rssi'), 'Missing avg_rssi in trace migration 006');
+assert.ok(traceMigration006Sql.includes('avg_snr'), 'Missing avg_snr in trace migration 006');
+assert.ok(traceMigration006Sql.includes('tolerance_pass'), 'Missing tolerance_pass in trace migration 006');
+assert.ok(traceSchemaSql.includes('v_device_test_metrics_report'), 'Missing v_device_test_metrics_report view in trace schema.sql');
+assert.ok(traceSchemaSql.includes('avg_cycle'), 'Missing avg_cycle in trace schema.sql');
+assert.ok(traceSchemaSql.includes('avg_rssi'), 'Missing avg_rssi in trace schema.sql');
+assert.ok(traceSchemaSql.includes('avg_snr'), 'Missing avg_snr in trace schema.sql');
+console.log('✓ Traceability migration 006 and schema.sql v_device_test_metrics_report validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
