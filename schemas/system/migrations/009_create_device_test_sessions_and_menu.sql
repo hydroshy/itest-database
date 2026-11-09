@@ -136,6 +136,7 @@ WHERE r."code" IN ('OPERATOR', 'operator', 'TESTER', 'tester', 'QA_ENGINEER', 'q
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 -- 5. Compatibility View
+DROP VIEW IF EXISTS system_schema.v_device_test_sessions CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_device_test_sessions AS
 SELECT
   dts."id",
