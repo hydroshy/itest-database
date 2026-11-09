@@ -117,9 +117,10 @@ CREATE INDEX IF NOT EXISTS "idx_unified_devices_protocol" ON system_schema."unif
 -- Initial Core Seed Data
 INSERT INTO system_schema."roles" ("code", "name", "description")
 VALUES
-  ('admin', 'Admin', 'Full administrative access to micro-kernel core'),
-  ('sub_admin', 'Sub-Admin', 'Delegated administrative privileges'),
-  ('operator', 'Operator', 'Operational, testing and device execution access')
+  ('SUPER_ADMIN', 'Super Admin', 'Full administrative access to all system features and plugins'),
+  ('SUB_ADMIN', 'Sub-Admin', 'Delegated administrative privileges'),
+  ('OPERATOR', 'Operator', 'Operational, testing and device execution access'),
+  ('END_USER', 'End User', 'Standard end user with access to assigned tools')
 ON CONFLICT ("code") DO UPDATE SET
   "name" = EXCLUDED."name",
   "description" = EXCLUDED."description";
@@ -133,12 +134,12 @@ VALUES
   ('system:devices:write', 'Register and edit devices', 'system', 'write')
 ON CONFLICT ("name") DO NOTHING;
 
--- Grant permissions to Admin role
+-- Grant permissions to Super Admin role
 INSERT INTO system_schema."role_permissions" ("role_id", "permission_id")
 SELECT r."id", p."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."permission" p
-WHERE r."code" = 'admin'
+WHERE r."code" = 'SUPER_ADMIN'
 ON CONFLICT DO NOTHING;
 
 -- Grant operational permissions to Operator role
@@ -146,7 +147,7 @@ INSERT INTO system_schema."role_permissions" ("role_id", "permission_id")
 SELECT r."id", p."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."permission" p
-WHERE r."code" = 'operator' AND p."name" IN ('system:devices:read', 'system:devices:write')
+WHERE r."code" = 'OPERATOR' AND p."name" IN ('system:devices:read', 'system:devices:write')
 ON CONFLICT DO NOTHING;
 
 -- Seed Default Admin Account: admin / abc@123 (bcrypt hash)

@@ -58,6 +58,7 @@ const requiredFiles = [
   'schemas/system/migrations/022_add_avg_metrics_to_device_test_batch_items.sql',
   'schemas/system/migrations/023_unify_simulation_flow_autocheck_and_multi_references.sql',
   'schemas/system/migrations/024_create_device_calibration_logs_and_views.sql',
+  'schemas/system/migrations/025_cleanup_duplicate_roles_and_standardize_rbac.sql',
   'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql',
   'scripts/migrate.js'
 ];
@@ -668,5 +669,17 @@ assert.ok(freshSystemSchemaSql3.includes('CREATE TABLE IF NOT EXISTS system_sche
 assert.ok(freshSystemSchemaSql3.includes('v_device_calibration_history'), 'Missing v_device_calibration_history in schema.sql');
 assert.ok(freshSystemSchemaSql3.includes('"calibration_data" JSONB NOT NULL DEFAULT \'{}\'::jsonb'), 'Missing calibration_data in schema.sql');
 console.log('✓ System migration 024 and schema.sql device calibration logs & history validated');
+
+// 35. Validate System Migration 025 for duplicate roles cleanup & standardization
+const systemMigration025Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/system/migrations/025_cleanup_duplicate_roles_and_standardize_rbac.sql'),
+  'utf8'
+);
+assert.ok(systemMigration025Sql.includes('SUPER_ADMIN'), 'Missing SUPER_ADMIN in migration 025');
+assert.ok(systemMigration025Sql.includes('SUB_ADMIN'), 'Missing SUB_ADMIN in migration 025');
+assert.ok(systemMigration025Sql.includes('OPERATOR'), 'Missing OPERATOR in migration 025');
+assert.ok(systemMigration025Sql.includes('END_USER'), 'Missing END_USER in migration 025');
+assert.ok(systemMigration025Sql.includes('DELETE FROM system_schema."roles"'), 'Missing DELETE statement for legacy duplicate roles');
+console.log('✓ System migration 025 duplicate roles cleanup & standardization validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

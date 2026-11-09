@@ -12,13 +12,9 @@ SET search_path TO system_schema, public;
 INSERT INTO system_schema."roles" ("code", "name", "description")
 VALUES
   ('SUPER_ADMIN', 'Super Admin', 'Full administrative access to all system features and plugins'),
-  ('admin', 'Admin', 'Full administrative access to micro-kernel core'),
   ('SUB_ADMIN', 'Sub-Admin', 'Delegated administrative privileges'),
-  ('sub_admin', 'Sub-Admin', 'Delegated administrative privileges'),
   ('OPERATOR', 'Operator', 'Operational, testing and device execution access'),
-  ('operator', 'Operator', 'Operational, testing and device execution access'),
-  ('END_USER', 'End User', 'Standard end user with access to assigned tools'),
-  ('user', 'User', 'Standard user')
+  ('END_USER', 'End User', 'Standard end user with access to assigned tools')
 ON CONFLICT ("code") DO UPDATE SET
   "name" = EXCLUDED."name",
   "description" = EXCLUDED."description";
