@@ -25,6 +25,7 @@ CREATE INDEX IF NOT EXISTS "idx_simu_profiles_sku_long_fw" ON system_schema."sim
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_flow_blocks_gin" ON system_schema."simulation_profiles" USING GIN ("flow_blocks");
 
 -- 3. Create view for Simulation Devices
+DROP VIEW IF EXISTS system_schema.v_simulation_devices CASCADE;
 CREATE OR REPLACE VIEW system_schema.v_simulation_devices AS
 SELECT
   d."id",

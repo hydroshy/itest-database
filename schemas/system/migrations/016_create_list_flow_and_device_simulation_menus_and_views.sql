@@ -106,6 +106,7 @@ COMMENT ON VIEW system_schema.v_simulation_flows IS 'View danh sách các kịch
 -- 3. Refresh view v_simulation_devices with dynamic check for devices schema
 DO $$
 BEGIN
+  EXECUTE 'DROP VIEW IF EXISTS system_schema.v_simulation_devices CASCADE;';
   IF EXISTS (
     SELECT 1 FROM information_schema.tables
     WHERE table_schema = 'devices' AND table_name = 'devices'

@@ -1126,7 +1126,7 @@ SELECT
   d."id",
   d."serial_number",
   d."network_id",
-  d."device_name",
+  d."device_name"::varchar AS "device_name",
   d."device_type",
   d."plugin_id",
   d."so_number",
