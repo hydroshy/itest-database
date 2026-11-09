@@ -606,6 +606,7 @@ assert.ok(systemMigration022Sql.includes('v_device_test_batch_items_detail'), 'M
 assert.ok(freshSystemSchemaSql.includes('"avg_cycle" NUMERIC(10,2)'), 'Missing avg_cycle in system schema.sql');
 assert.ok(freshSystemSchemaSql.includes('"avg_rssi" NUMERIC(10,2)'), 'Missing avg_rssi in system schema.sql');
 assert.ok(freshSystemSchemaSql.includes('"avg_snr" NUMERIC(10,2)'), 'Missing avg_snr in system schema.sql');
+assert.ok(freshSystemSchemaSql.includes('ALTER TABLE system_schema."device_test_batch_items"') && freshSystemSchemaSql.includes('ADD COLUMN IF NOT EXISTS "avg_cycle" NUMERIC(10,2)'), 'Missing ALTER TABLE ADD COLUMN IF NOT EXISTS avg_cycle in system schema.sql');
 console.log('✓ System migration 022 and schema.sql avg metrics (AVG_CYCLE, AVG_RSSI, AVG_SNR) validated');
 
 // 32. Validate Traceability Migration 006 for v_device_test_metrics_report

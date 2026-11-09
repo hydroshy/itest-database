@@ -848,6 +848,11 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batch_items" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE system_schema."device_test_batch_items"
+  ADD COLUMN IF NOT EXISTS "avg_cycle" NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS "avg_rssi" NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS "avg_snr" NUMERIC(10,2);
+
 CREATE INDEX IF NOT EXISTS "idx_dtest_batches_item_fw"
   ON system_schema."device_test_batches" ("item_code", "long_fw");
 
