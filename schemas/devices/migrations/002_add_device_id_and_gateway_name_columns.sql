@@ -242,11 +242,24 @@ CREATE OR REPLACE VIEW devices.testing_packets AS SELECT * FROM devices.device_p
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'system_schema') THEN
-        CREATE OR REPLACE VIEW system_schema.device_packets AS SELECT * FROM devices.device_packets;
-        CREATE OR REPLACE VIEW system_schema.testing_packets AS SELECT * FROM devices.device_packets;
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'system_schema' AND table_name = 'device_packets' AND table_type = 'BASE TABLE'
+        ) THEN
+            EXECUTE 'DROP VIEW IF EXISTS system_schema.device_packets CASCADE;';
+            EXECUTE 'CREATE OR REPLACE VIEW system_schema.device_packets AS SELECT * FROM devices.device_packets;';
+        END IF;
+        EXECUTE 'DROP VIEW IF EXISTS system_schema.testing_packets CASCADE;';
+        EXECUTE 'CREATE OR REPLACE VIEW system_schema.testing_packets AS SELECT * FROM devices.device_packets;';
     END IF;
 
     IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'lorawan_chirpstack') THEN
-        CREATE OR REPLACE VIEW lorawan_chirpstack.gateway_test_sessions AS SELECT * FROM devices.gateway_test_sessions;
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'lorawan_chirpstack' AND table_name = 'gateway_test_sessions' AND table_type = 'BASE TABLE'
+        ) THEN
+            EXECUTE 'DROP VIEW IF EXISTS lorawan_chirpstack.gateway_test_sessions CASCADE;';
+            EXECUTE 'CREATE OR REPLACE VIEW lorawan_chirpstack.gateway_test_sessions AS SELECT * FROM devices.gateway_test_sessions;';
+        END IF;
     END IF;
 END $$;

@@ -176,9 +176,23 @@ BEGIN
             DROP TABLE IF EXISTS system_schema.testing_devices CASCADE;
         END IF;
 
-        EXECUTE 'CREATE OR REPLACE VIEW system_schema.devices AS SELECT * FROM devices.devices';
-        EXECUTE 'CREATE OR REPLACE VIEW system_schema.device_packets AS SELECT * FROM devices.device_packets';
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'system_schema' AND table_name = 'devices' AND table_type = 'BASE TABLE'
+        ) THEN
+            EXECUTE 'DROP VIEW IF EXISTS system_schema.devices CASCADE;';
+            EXECUTE 'CREATE OR REPLACE VIEW system_schema.devices AS SELECT * FROM devices.devices';
+        END IF;
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'system_schema' AND table_name = 'device_packets' AND table_type = 'BASE TABLE'
+        ) THEN
+            EXECUTE 'DROP VIEW IF EXISTS system_schema.device_packets CASCADE;';
+            EXECUTE 'CREATE OR REPLACE VIEW system_schema.device_packets AS SELECT * FROM devices.device_packets';
+        END IF;
+        EXECUTE 'DROP VIEW IF EXISTS system_schema.testing_devices CASCADE;';
         EXECUTE 'CREATE OR REPLACE VIEW system_schema.testing_devices AS SELECT * FROM devices.devices';
+        EXECUTE 'DROP VIEW IF EXISTS system_schema.testing_packets CASCADE;';
         EXECUTE 'CREATE OR REPLACE VIEW system_schema.testing_packets AS SELECT * FROM devices.device_packets';
     END IF;
 
@@ -192,6 +206,7 @@ BEGIN
             DROP TABLE IF EXISTS lorawan_chirpstack.gateway_test_sessions CASCADE;
         END IF;
 
+        EXECUTE 'DROP VIEW IF EXISTS lorawan_chirpstack.gateway_test_sessions CASCADE;';
         EXECUTE 'CREATE OR REPLACE VIEW lorawan_chirpstack.gateway_test_sessions AS SELECT * FROM devices.gateway_test_sessions';
     END IF;
 END $$;
