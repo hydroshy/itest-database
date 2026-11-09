@@ -116,8 +116,8 @@ BEGIN
       SELECT id FROM system_schema."permission"
       WHERE name IN ('menu:testing-device-payload:view', 'testing:payload:read')
     LOOP
-      INSERT INTO system_schema."role_permissions" ("role_id", "permission_id", "roleCode")
-      VALUES (v_role.id, v_perm.id, v_role.code)
+      INSERT INTO system_schema."role_permissions" ("role_id", "permission_id")
+      VALUES (v_role.id, v_perm.id)
       ON CONFLICT DO NOTHING;
     END LOOP;
   END LOOP;

@@ -516,6 +516,7 @@ assert.ok(systemMigration014Sql.includes('"snr" DOUBLE PRECISION'), 'Missing snr
 assert.ok(systemMigration014Sql.includes('"frequency" DOUBLE PRECISION'), 'Missing frequency column in migration 014');
 assert.ok(systemMigration014Sql.includes('v_device_payload_live'), 'Missing v_device_payload_live view in migration 014');
 assert.ok(systemMigration014Sql.includes('testing:device-payload'), 'Missing testing:device-payload menu item in migration 014');
+assert.ok(!systemMigration014Sql.includes('"roleCode"'), 'role_permissions does not have roleCode column');
 assert.ok(updatedSystemSchemaSql.includes('v_device_payload_live'), 'Missing v_device_payload_live in system/schema.sql');
 assert.ok(updatedSystemSchemaSql.includes('testing:device-payload'), 'Missing testing:device-payload in system/schema.sql');
 console.log('✓ System migration 014 and system/schema.sql device_packets & payload live view validated');
