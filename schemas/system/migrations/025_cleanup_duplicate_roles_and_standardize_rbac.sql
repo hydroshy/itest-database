@@ -50,20 +50,17 @@ BEGIN
       WHERE r."code" = rec.legacy_code
       ON CONFLICT DO NOTHING;
 
-      -- Remap role_menu_permissions join table
-      IF EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'system_schema' AND table_name = 'role_menu_permissions' AND column_name = 'role_code'
-      ) THEN
-        INSERT INTO system_schema."role_menu_permissions" ("role_code", "menu_item_id")
-        SELECT rec.canonical_code, rmp."menu_item_id"
-        FROM system_schema."role_menu_permissions" rmp
-        WHERE UPPER(rmp."role_code") = UPPER(rec.legacy_code)
-        ON CONFLICT ("role_code", "menu_item_id") DO NOTHING;
+      -- Remap role_menu_permissions join table (use roleId/menuItemId which carry the UNIQUE constraint)
+      INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
+      SELECT v_canonical_id, rec.canonical_code, rmp."menuItemId"
+      FROM system_schema."role_menu_permissions" rmp
+      JOIN system_schema."roles" r ON r."id" = rmp."roleId"
+      WHERE r."code" = rec.legacy_code
+      ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
-        DELETE FROM system_schema."role_menu_permissions"
-        WHERE UPPER("role_code") = UPPER(rec.legacy_code);
-      END IF;
+      DELETE FROM system_schema."role_menu_permissions" rmp
+      USING system_schema."roles" r
+      WHERE r."id" = rmp."roleId" AND r."code" = rec.legacy_code;
     END IF;
   END LOOP;
 END $$;
