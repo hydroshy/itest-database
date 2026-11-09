@@ -101,22 +101,27 @@ FOR EACH ROW
 EXECUTE FUNCTION system_schema.sync_role_menu_permissions_columns();
 
 -- 3. Compatibility Views in system_schema
+DROP VIEW IF EXISTS system_schema."system_menu_items" CASCADE;
 CREATE OR REPLACE VIEW system_schema."system_menu_items" AS
 SELECT * FROM system_schema."menu_items";
 
 -- 4. Compatibility Views in public schema
+DROP VIEW IF EXISTS public."system_menu_items" CASCADE;
 CREATE OR REPLACE VIEW public."system_menu_items" AS
 SELECT * FROM system_schema."menu_items";
 
+DROP VIEW IF EXISTS public."menu_items" CASCADE;
 CREATE OR REPLACE VIEW public."menu_items" AS
 SELECT * FROM system_schema."menu_items";
 
+DROP VIEW IF EXISTS public."role_menu_permissions" CASCADE;
 CREATE OR REPLACE VIEW public."role_menu_permissions" AS
 SELECT * FROM system_schema."role_menu_permissions";
 
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'system_schema' AND table_name = 'roles') THEN
+    EXECUTE 'DROP VIEW IF EXISTS public."roles" CASCADE;';
     EXECUTE 'CREATE OR REPLACE VIEW public."roles" AS SELECT * FROM system_schema."roles";';
   END IF;
 END $$;

@@ -276,5 +276,7 @@ FOR EACH ROW
 EXECUTE FUNCTION devices.sync_device_packets_columns();
 
 -- 4. Compatibility Views inside devices schema
+DROP VIEW IF EXISTS devices.testing_devices CASCADE;
 CREATE OR REPLACE VIEW devices.testing_devices AS SELECT * FROM devices.devices;
+DROP VIEW IF EXISTS devices.testing_packets CASCADE;
 CREATE OR REPLACE VIEW devices.testing_packets AS SELECT * FROM devices.device_packets;

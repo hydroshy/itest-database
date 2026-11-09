@@ -107,12 +107,15 @@ BEGIN
 END $$;
 
 -- 5. Refresh Compatibility Views safely
+DROP VIEW IF EXISTS system_schema."system_menu_items" CASCADE;
 CREATE OR REPLACE VIEW system_schema."system_menu_items" AS
 SELECT * FROM system_schema."menu_items";
 
+DROP VIEW IF EXISTS public."system_menu_items" CASCADE;
 CREATE OR REPLACE VIEW public."system_menu_items" AS
 SELECT * FROM system_schema."menu_items";
 
+DROP VIEW IF EXISTS public."menu_items" CASCADE;
 CREATE OR REPLACE VIEW public."menu_items" AS
 SELECT * FROM system_schema."menu_items";
 
