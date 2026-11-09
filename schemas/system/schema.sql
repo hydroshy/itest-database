@@ -554,7 +554,11 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
 
 ALTER TABLE system_schema."simulation_profiles"
   ADD COLUMN IF NOT EXISTS "sku" VARCHAR(100),
-  ADD COLUMN IF NOT EXISTS "flow_blocks" JSONB NOT NULL DEFAULT '[]'::jsonb;
+  ADD COLUMN IF NOT EXISTS "flow_blocks" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS "fw_version" VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS "auto_check_criteria" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS "reference_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS "simulator_device" JSONB DEFAULT NULL;
 
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_simu_id" ON system_schema."simulation_profiles"("simu_id");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_item_code" ON system_schema."simulation_profiles"("item_code");
@@ -803,6 +807,10 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batches" (
   "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 
+ALTER TABLE system_schema."device_test_batches"
+  ADD COLUMN IF NOT EXISTS "reference_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS "simulator_device" JSONB DEFAULT NULL;
+
 -- Allow legacy orphan IDs, but protect all valid links and new batch writes.
 UPDATE system_schema.device_test_batches b
 SET simu_id = p.simu_id
@@ -867,7 +875,14 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batch_items" (
 ALTER TABLE system_schema."device_test_batch_items"
   ADD COLUMN IF NOT EXISTS "avg_cycle" NUMERIC(10,2),
   ADD COLUMN IF NOT EXISTS "avg_rssi" NUMERIC(10,2),
-  ADD COLUMN IF NOT EXISTS "avg_snr" NUMERIC(10,2);
+  ADD COLUMN IF NOT EXISTS "avg_snr" NUMERIC(10,2),
+  ADD COLUMN IF NOT EXISTS "reference_devices_data" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS "window_packet_count" INTEGER,
+  ADD COLUMN IF NOT EXISTS "start_counter" BIGINT,
+  ADD COLUMN IF NOT EXISTS "end_counter" BIGINT,
+  ADD COLUMN IF NOT EXISTS "reference_window_packet_count" INTEGER,
+  ADD COLUMN IF NOT EXISTS "avg_metrics" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS "calibration_data" JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 CREATE INDEX IF NOT EXISTS "idx_dtest_batches_item_fw"
   ON system_schema."device_test_batches" ("item_code", "long_fw");
