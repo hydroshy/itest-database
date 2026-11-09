@@ -143,6 +143,8 @@ BEGIN
             DROP TABLE IF EXISTS plugins_schema.decoder_scripts CASCADE;
         END IF;
 
+        EXECUTE 'DROP VIEW IF EXISTS plugins_schema.v_memmap_decoders CASCADE;';
+        EXECUTE 'DROP VIEW IF EXISTS plugins_schema.decoder_scripts CASCADE;';
         EXECUTE 'CREATE OR REPLACE VIEW plugins_schema.decoder_scripts AS SELECT * FROM decoder.decoder_scripts';
         EXECUTE 'CREATE OR REPLACE VIEW plugins_schema.v_memmap_decoders AS SELECT * FROM decoder.v_memmap_decoders';
     END IF;
