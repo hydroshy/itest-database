@@ -96,14 +96,14 @@ FROM memmap_manager.memmap_profiles p
 FULL OUTER JOIN decoder.decoder_scripts d 
     ON p.sku = d.sku AND p.long_fw = d.long_fw;
 
--- 3. Seed Reference Decoder
-INSERT INTO decoder.decoder_scripts (
-    sku, long_fw, protocol, script, description, input_format, sample_payload, sample_fport, sample_decoded, is_active
-) VALUES (
-    'STANDARD-LORAWAN',
-    'DEFAULT',
-    'lorawan',
-    'function decodeUplink(input) {
+-- 3. Seed Reference Decoder (Idempotent without relying on specific unique constraint names)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM decoder.decoder_scripts WHERE sku = 'STANDARD-LORAWAN' AND (long_fw = 'DEFAULT' OR fw_version = 'DEFAULT')
+  ) THEN
+    UPDATE decoder.decoder_scripts SET
+      script = 'function decodeUplink(input) {
   var bytes = input.bytes;
   var port = input.fPort;
   var data = {};
@@ -115,20 +115,40 @@ INSERT INTO decoder.decoder_scripts (
   }
   return { data: data };
 }',
-    'Standard LoRaWAN environmental sensor codec (ChirpStack v4 / TTN v3)',
-    'hex',
-    '0a5015b3',
-    1,
-    '{"temperature": 26.4, "humidity": 55.55}'::jsonb,
-    true
-)
-ON CONFLICT (sku, long_fw) DO UPDATE SET
-    script = EXCLUDED.script,
-    description = EXCLUDED.description,
-    sample_payload = EXCLUDED.sample_payload,
-    sample_fport = EXCLUDED.sample_fport,
-    sample_decoded = EXCLUDED.sample_decoded,
-    updated_at = CURRENT_TIMESTAMP;
+      description = 'Standard LoRaWAN environmental sensor codec (ChirpStack v4 / TTN v3)',
+      sample_payload = '0a5015b3',
+      sample_fport = 1,
+      sample_decoded = '{"temperature": 26.4, "humidity": 55.55}'::jsonb,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE sku = 'STANDARD-LORAWAN' AND (long_fw = 'DEFAULT' OR fw_version = 'DEFAULT');
+  ELSE
+    INSERT INTO decoder.decoder_scripts (
+      sku, long_fw, protocol, script, description, input_format, sample_payload, sample_fport, sample_decoded, is_active
+    ) VALUES (
+      'STANDARD-LORAWAN',
+      'DEFAULT',
+      'lorawan',
+      'function decodeUplink(input) {
+  var bytes = input.bytes;
+  var port = input.fPort;
+  var data = {};
+  if (bytes && bytes.length >= 2) {
+    data.temperature = ((bytes[0] << 8) | bytes[1]) / 100.0;
+  }
+  if (bytes && bytes.length >= 4) {
+    data.humidity = ((bytes[2] << 8) | bytes[3]) / 100.0;
+  }
+  return { data: data };
+}',
+      'Standard LoRaWAN environmental sensor codec (ChirpStack v4 / TTN v3)',
+      'hex',
+      '0a5015b3',
+      1,
+      '{"temperature": 26.4, "humidity": 55.55}'::jsonb,
+      true
+    );
+  END IF;
+END $$;
 
 -- 4. Backward-compatibility Views in plugins_schema
 -- If plugins_schema exists, create views pointing to decoder schema

@@ -99,27 +99,16 @@ FULL OUTER JOIN plugins_schema.decoder_scripts ds
   ON LOWER(TRIM(mp.sku)) = LOWER(TRIM(ds.sku))
  AND LOWER(TRIM(mp.long_fw)) = LOWER(TRIM(ds.long_fw));
 
--- 5. Seed Standard Default Template
-INSERT INTO plugins_schema."decoder_scripts" (
-  "name",
-  "sku",
-  "long_fw",
-  "protocol",
-  "script",
-  "description",
-  "input_format",
-  "sample_payload",
-  "sample_fport",
-  "sample_decoded",
-  "is_active",
-  "metadata",
-  "created_by"
-) VALUES (
-  'Standard LoRaWAN Sensor Decoder Template',
-  'STANDARD-LORAWAN',
-  'DEFAULT',
-  'lorawan',
-  '/**
+-- 5. Seed Standard Default Template (Idempotent for both Base Table and View)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM plugins_schema."decoder_scripts"
+    WHERE "sku" = 'STANDARD-LORAWAN' AND "long_fw" = 'DEFAULT'
+  ) THEN
+    UPDATE plugins_schema."decoder_scripts" SET
+      "name" = 'Standard LoRaWAN Sensor Decoder Template',
+      "script" = '/**
  * Standard LoRaWAN Uplink Decoder
  * Compatible with ChirpStack v4 and TTN v3
  *
@@ -159,21 +148,82 @@ function Decode(fPort, bytes) {
   var res = decodeUplink({ bytes: bytes, fPort: fPort });
   return res.data;
 }',
-  'Standard reference JavaScript codec for LoRaWAN sensor uplinks decoding temperature, humidity, and battery voltage.',
-  'hex',
-  '0A2813880D1A',
-  1,
-  '{"temperature": 26.0, "humidity": 50.0, "battery_mv": 3354}'::jsonb,
-  true,
-  '{"author": "ITEST DATABASE", "version": "1.0.0", "standard": "ChirpStack v4 / TTN v3"}'::jsonb,
-  'system'
-) ON CONFLICT ("sku", "long_fw") DO UPDATE SET
-  "name" = EXCLUDED."name",
-  "script" = EXCLUDED."script",
-  "description" = EXCLUDED."description",
-  "sample_payload" = EXCLUDED."sample_payload",
-  "sample_decoded" = EXCLUDED."sample_decoded",
-  "updated_at" = CURRENT_TIMESTAMP;
+      "description" = 'Standard reference JavaScript codec for LoRaWAN sensor uplinks decoding temperature, humidity, and battery voltage.',
+      "sample_payload" = '0A2813880D1A',
+      "sample_decoded" = '{"temperature": 26.0, "humidity": 50.0, "battery_mv": 3354}'::jsonb,
+      "updated_at" = CURRENT_TIMESTAMP
+    WHERE "sku" = 'STANDARD-LORAWAN' AND "long_fw" = 'DEFAULT';
+  ELSE
+    INSERT INTO plugins_schema."decoder_scripts" (
+      "name",
+      "sku",
+      "long_fw",
+      "protocol",
+      "script",
+      "description",
+      "input_format",
+      "sample_payload",
+      "sample_fport",
+      "sample_decoded",
+      "is_active",
+      "metadata",
+      "created_by"
+    ) VALUES (
+      'Standard LoRaWAN Sensor Decoder Template',
+      'STANDARD-LORAWAN',
+      'DEFAULT',
+      'lorawan',
+      '/**
+ * Standard LoRaWAN Uplink Decoder
+ * Compatible with ChirpStack v4 and TTN v3
+ *
+ * @param {Object} input - { bytes: number[], fPort: number, variables: Object }
+ * @returns {Object} { data: Object, warnings: string[], errors: string[] }
+ */
+function decodeUplink(input) {
+  var bytes = input.bytes || [];
+  var fPort = input.fPort || 1;
+  var data = {};
+  var warnings = [];
+  var errors = [];
+
+  if (bytes.length >= 2) {
+    var tempRaw = (bytes[0] << 8) | bytes[1];
+    if (tempRaw > 32767) tempRaw -= 65536;
+    data.temperature = parseFloat((tempRaw / 100.0).toFixed(2));
+  }
+  if (bytes.length >= 4) {
+    var humRaw = (bytes[2] << 8) | bytes[3];
+    data.humidity = parseFloat((humRaw / 100.0).toFixed(2));
+  }
+  if (bytes.length >= 6) {
+    var battRaw = (bytes[4] << 8) | bytes[5];
+    data.battery_mv = battRaw;
+  }
+
+  return {
+    data: data,
+    warnings: warnings,
+    errors: errors
+  };
+}
+
+// Backward compatibility for TTN / ChirpStack v3
+function Decode(fPort, bytes) {
+  var res = decodeUplink({ bytes: bytes, fPort: fPort });
+  return res.data;
+}',
+      'Standard reference JavaScript codec for LoRaWAN sensor uplinks decoding temperature, humidity, and battery voltage.',
+      'hex',
+      '0A2813880D1A',
+      1,
+      '{"temperature": 26.0, "humidity": 50.0, "battery_mv": 3354}'::jsonb,
+      true,
+      '{"author": "ITEST DATABASE", "version": "1.0.0", "standard": "ChirpStack v4 / TTN v3"}'::jsonb,
+      'system'
+    );
+  END IF;
+END $$;
 
 -- 6. Idempotent Runtime Grants
 DO $$

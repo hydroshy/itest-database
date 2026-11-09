@@ -541,6 +541,10 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "uplink_interval_sec" INTEGER NOT NULL DEFAULT 10,
   "timed_actions" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "flow_blocks" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "fw_version" VARCHAR(100),
+  "auto_check_criteria" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "reference_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "simulator_device" JSONB DEFAULT NULL,
   "is_flow_template" BOOLEAN NOT NULL DEFAULT TRUE,
   "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "created_by" VARCHAR(100) NOT NULL DEFAULT 'admin',
@@ -558,6 +562,9 @@ CREATE INDEX IF NOT EXISTS "idx_simu_profiles_sku_long_fw" ON system_schema."sim
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_long_fw" ON system_schema."simulation_profiles"("long_fw");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_timed_actions_gin" ON system_schema."simulation_profiles" USING GIN ("timed_actions");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_flow_blocks_gin" ON system_schema."simulation_profiles" USING GIN ("flow_blocks");
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_fw_version" ON system_schema."simulation_profiles"("fw_version");
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_auto_check_gin" ON system_schema."simulation_profiles" USING GIN ("auto_check_criteria");
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_ref_devices_gin" ON system_schema."simulation_profiles" USING GIN ("reference_devices");
 
 -- 13. Simulation Runs Table
 CREATE TABLE IF NOT EXISTS system_schema."simulation_runs" (
@@ -782,6 +789,8 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batches" (
   "simulation_flow" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "flow_duration_seconds" INTEGER NOT NULL DEFAULT 600,
   "auto_check_criteria" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "reference_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "simulator_device" JSONB DEFAULT NULL,
   "max_devices" INTEGER NOT NULL DEFAULT 10,
   "status" VARCHAR(50) NOT NULL DEFAULT 'CREATED',
   "verdict" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
@@ -843,6 +852,13 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batch_items" (
   "avg_cycle" NUMERIC(10,2),
   "avg_rssi" NUMERIC(10,2),
   "avg_snr" NUMERIC(10,2),
+  "reference_devices_data" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "window_packet_count" INTEGER,
+  "start_counter" BIGINT,
+  "end_counter" BIGINT,
+  "reference_window_packet_count" INTEGER,
+  "avg_metrics" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "calibration_data" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "logs" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -878,6 +894,8 @@ SELECT
   b."simulation_flow",
   b."flow_duration_seconds",
   b."auto_check_criteria",
+  b."reference_devices",
+  b."simulator_device",
   b."max_devices",
   b."status",
   b."verdict",
@@ -941,6 +959,13 @@ SELECT
     (i."comparison_result"->>'avgSnr')::numeric,
     (i."comparison_result"->>'snr')::numeric
   ) AS "avg_snr",
+  i."reference_devices_data",
+  i."window_packet_count",
+  i."start_counter",
+  i."end_counter",
+  i."reference_window_packet_count",
+  i."avg_metrics",
+  i."calibration_data",
   i."logs",
   i."created_at",
   i."updated_at"
@@ -1089,6 +1114,7 @@ SELECT
   COALESCE(p."name", p."profile_name", p."simu_id") AS "name",
   p."description",
   p."item_code",
+  COALESCE(p."fw_version", p."long_fw") AS "fw_version",
   p."sku",
   p."long_fw",
   COALESCE(p."sensor_connectivity", 'LoRaWAN') AS "sensor_connectivity",
@@ -1101,6 +1127,16 @@ SELECT
     END
   ) AS "block_count",
   p."timed_actions",
+  p."auto_check_criteria",
+  CASE
+    WHEN jsonb_typeof(p."auto_check_criteria"->'rules') = 'array'
+      THEN jsonb_array_length(p."auto_check_criteria"->'rules')
+    WHEN jsonb_typeof(p."auto_check_criteria") = 'object' AND p."auto_check_criteria" != '{}'::jsonb
+      THEN 1
+    ELSE 0
+  END AS "rule_count",
+  p."reference_devices",
+  p."simulator_device",
   p."created_by",
   p."created_at",
   p."updated_at"
@@ -1347,6 +1383,123 @@ BEGIN
     GRANT SELECT ON system_schema.v_available_test_batches TO itest_ops_user;
   END IF;
 END $$;
+
+-- 18. Device Calibration Logs (Two-Point Sensor Calibration & Multi-Point)
+CREATE TABLE IF NOT EXISTS system_schema."device_calibration_logs" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "calibration_id" VARCHAR(50) NOT NULL UNIQUE DEFAULT ('CAL-' || upper(replace(gen_random_uuid()::text, '-', ''))),
+  "batch_id" UUID REFERENCES system_schema."device_test_batches"("id") ON DELETE CASCADE,
+  "batch_item_id" UUID REFERENCES system_schema."device_test_batch_items"("id") ON DELETE CASCADE,
+  "execution_id" VARCHAR(100) NOT NULL,
+  "simu_id" VARCHAR(100) REFERENCES system_schema."simulation_profiles"("simu_id") ON DELETE SET NULL,
+  "device_test_registration_id" UUID REFERENCES system_schema."device_test_registrations"("id") ON DELETE SET NULL,
+  "serial_number" VARCHAR(100) NOT NULL,
+  "dev_eui" VARCHAR(64) NOT NULL,
+  "item_code" VARCHAR(100) NOT NULL,
+  "fw_version" VARCHAR(100),
+  "calibration_type" VARCHAR(50) NOT NULL DEFAULT 'TWO_POINT',
+  "formula" VARCHAR(100) NOT NULL DEFAULT 'y = a*x + b',
+  "x1" DOUBLE PRECISION,
+  "y1" DOUBLE PRECISION,
+  "x2" DOUBLE PRECISION,
+  "y2" DOUBLE PRECISION,
+  "coeff_a" DOUBLE PRECISION,
+  "coeff_b" DOUBLE PRECISION,
+  "window_id_1" VARCHAR(100),
+  "window_id_2" VARCHAR(100),
+  "points_data" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "downlink_status" VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+  "downlink_payload" VARCHAR(255),
+  "downlink_fport" INTEGER DEFAULT 10,
+  "downlink_tx_time" TIMESTAMPTZ,
+  "verification_status" VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+  "verification_details" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "status" VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+  "error_message" TEXT,
+  "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "created_by" VARCHAR(100) NOT NULL DEFAULT 'system',
+  "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS "idx_calib_logs_batch_id"
+  ON system_schema."device_calibration_logs" ("batch_id");
+
+CREATE INDEX IF NOT EXISTS "idx_calib_logs_execution_id"
+  ON system_schema."device_calibration_logs" ("execution_id");
+
+CREATE INDEX IF NOT EXISTS "idx_calib_logs_serial"
+  ON system_schema."device_calibration_logs" ("serial_number");
+
+CREATE INDEX IF NOT EXISTS "idx_calib_logs_dev_eui"
+  ON system_schema."device_calibration_logs" ("dev_eui");
+
+CREATE INDEX IF NOT EXISTS "idx_calib_logs_item_code"
+  ON system_schema."device_calibration_logs" ("item_code");
+
+CREATE INDEX IF NOT EXISTS "idx_calib_logs_created_at"
+  ON system_schema."device_calibration_logs" ("created_at" DESC);
+
+DROP VIEW IF EXISTS system_schema.v_device_calibration_history CASCADE;
+CREATE OR REPLACE VIEW system_schema.v_device_calibration_history AS
+SELECT
+  c."id",
+  c."calibration_id",
+  c."batch_id",
+  b."batch_code",
+  b."batch_name",
+  c."batch_item_id",
+  c."execution_id",
+  c."simu_id",
+  p."profile_name" AS "flow_profile_name",
+  c."device_test_registration_id",
+  c."serial_number",
+  c."dev_eui",
+  c."item_code",
+  c."fw_version",
+  c."calibration_type",
+  c."formula",
+  c."x1",
+  c."y1",
+  c."x2",
+  c."y2",
+  c."coeff_a",
+  c."coeff_b",
+  c."window_id_1",
+  c."window_id_2",
+  c."points_data",
+  c."downlink_status",
+  c."downlink_payload",
+  c."downlink_fport",
+  c."downlink_tx_time",
+  c."verification_status",
+  c."verification_details",
+  c."status",
+  c."error_message",
+  c."metadata",
+  c."created_by",
+  c."created_at",
+  c."updated_at"
+FROM system_schema."device_calibration_logs" c
+LEFT JOIN system_schema."device_test_batches" b ON c."batch_id" = b."id"
+LEFT JOIN system_schema."simulation_profiles" p ON c."simu_id" = p."simu_id";
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_system_user') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.device_calibration_logs TO itest_system_user;
+    GRANT SELECT ON system_schema.v_device_calibration_history TO itest_system_user;
+  END IF;
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugins_user') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.device_calibration_logs TO itest_plugins_user;
+    GRANT SELECT ON system_schema.v_device_calibration_history TO itest_plugins_user;
+  END IF;
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_ops_user') THEN
+    GRANT SELECT ON system_schema.device_calibration_logs TO itest_ops_user;
+    GRANT SELECT ON system_schema.v_device_calibration_history TO itest_ops_user;
+  END IF;
+END $$;
+
 
 
 

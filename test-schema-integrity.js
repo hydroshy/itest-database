@@ -56,6 +56,8 @@ const requiredFiles = [
   'schemas/memmap-manager/migrations/005_identify_by_item_code_and_fw_version.sql',
   'schemas/system/migrations/021_create_so_test_batches_and_menus.sql',
   'schemas/system/migrations/022_add_avg_metrics_to_device_test_batch_items.sql',
+  'schemas/system/migrations/023_unify_simulation_flow_autocheck_and_multi_references.sql',
+  'schemas/system/migrations/024_create_device_calibration_logs_and_views.sql',
   'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql',
   'scripts/migrate.js'
 ];
@@ -623,5 +625,48 @@ assert.ok(traceSchemaSql.includes('avg_cycle'), 'Missing avg_cycle in trace sche
 assert.ok(traceSchemaSql.includes('avg_rssi'), 'Missing avg_rssi in trace schema.sql');
 assert.ok(traceSchemaSql.includes('avg_snr'), 'Missing avg_snr in trace schema.sql');
 console.log('✓ Traceability migration 006 and schema.sql v_device_test_metrics_report validated');
+
+// 33. Validate System Migration 023 for unified simulation flow, autocheck & multi-reference devices
+const systemMigration023Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/023_unify_simulation_flow_autocheck_and_multi_references.sql'), 'utf8');
+const freshSystemSchemaSql2 = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
+
+// Check simulation_profiles columns
+assert.ok(systemMigration023Sql.includes('ADD COLUMN IF NOT EXISTS "auto_check_criteria" JSONB'), 'Missing auto_check_criteria in migration 023');
+assert.ok(systemMigration023Sql.includes('ADD COLUMN IF NOT EXISTS "reference_devices" JSONB'), 'Missing reference_devices in migration 023');
+assert.ok(systemMigration023Sql.includes('ADD COLUMN IF NOT EXISTS "fw_version" VARCHAR(100)'), 'Missing fw_version in migration 023');
+assert.ok(freshSystemSchemaSql2.includes('"auto_check_criteria" JSONB NOT NULL DEFAULT \'{}\'::jsonb'), 'Missing auto_check_criteria in system schema.sql simulation_profiles');
+assert.ok(freshSystemSchemaSql2.includes('"reference_devices" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing reference_devices in system schema.sql simulation_profiles');
+
+// Check device_test_batches columns
+assert.ok(systemMigration023Sql.includes('ALTER TABLE system_schema."device_test_batches"') && systemMigration023Sql.includes('ADD COLUMN IF NOT EXISTS "reference_devices" JSONB'), 'Missing reference_devices on device_test_batches in migration 023');
+
+// Check device_test_batch_items columns
+assert.ok(systemMigration023Sql.includes('ADD COLUMN IF NOT EXISTS "reference_devices_data" JSONB'), 'Missing reference_devices_data in migration 023');
+assert.ok(systemMigration023Sql.includes('ADD COLUMN IF NOT EXISTS "window_packet_count" INTEGER'), 'Missing window_packet_count in migration 023');
+assert.ok(systemMigration023Sql.includes('ADD COLUMN IF NOT EXISTS "avg_metrics" JSONB'), 'Missing avg_metrics in migration 023');
+assert.ok(freshSystemSchemaSql2.includes('"reference_devices_data" JSONB NOT NULL DEFAULT \'[]\'::jsonb'), 'Missing reference_devices_data in schema.sql');
+assert.ok(freshSystemSchemaSql2.includes('"window_packet_count" INTEGER'), 'Missing window_packet_count in schema.sql');
+assert.ok(freshSystemSchemaSql2.includes('"avg_metrics" JSONB NOT NULL DEFAULT \'{}\'::jsonb'), 'Missing avg_metrics in schema.sql');
+
+// Check views
+assert.ok(systemMigration023Sql.includes('v_simulation_flows'), 'Missing v_simulation_flows in migration 023');
+assert.ok(systemMigration023Sql.includes('v_device_test_batches'), 'Missing v_device_test_batches in migration 023');
+assert.ok(systemMigration023Sql.includes('v_device_test_batch_items_detail'), 'Missing v_device_test_batch_items_detail in migration 023');
+console.log('✓ System migration 023 and schema.sql unified flow, autocheck & multi-reference validated');
+
+// 34. Validate System Migration 024 for device_calibration_logs and views
+const systemMigration024Sql = fs.readFileSync(path.join(__dirname, 'schemas/system/migrations/024_create_device_calibration_logs_and_views.sql'), 'utf8');
+const freshSystemSchemaSql3 = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
+
+assert.ok(systemMigration024Sql.includes('CREATE TABLE IF NOT EXISTS system_schema."device_calibration_logs"'), 'Missing device_calibration_logs in migration 024');
+assert.ok(systemMigration024Sql.includes('"coeff_a" DOUBLE PRECISION'), 'Missing coeff_a in migration 024');
+assert.ok(systemMigration024Sql.includes('"coeff_b" DOUBLE PRECISION'), 'Missing coeff_b in migration 024');
+assert.ok(systemMigration024Sql.includes('"window_id_1" VARCHAR(100)'), 'Missing window_id_1 in migration 024');
+assert.ok(systemMigration024Sql.includes('"window_id_2" VARCHAR(100)'), 'Missing window_id_2 in migration 024');
+assert.ok(systemMigration024Sql.includes('v_device_calibration_history'), 'Missing v_device_calibration_history in migration 024');
+assert.ok(freshSystemSchemaSql3.includes('CREATE TABLE IF NOT EXISTS system_schema."device_calibration_logs"'), 'Missing device_calibration_logs in schema.sql');
+assert.ok(freshSystemSchemaSql3.includes('v_device_calibration_history'), 'Missing v_device_calibration_history in schema.sql');
+assert.ok(freshSystemSchemaSql3.includes('"calibration_data" JSONB NOT NULL DEFAULT \'{}\'::jsonb'), 'Missing calibration_data in schema.sql');
+console.log('✓ System migration 024 and schema.sql device calibration logs & history validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
