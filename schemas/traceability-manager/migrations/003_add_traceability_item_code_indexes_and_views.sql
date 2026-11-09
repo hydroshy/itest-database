@@ -14,6 +14,7 @@ CREATE INDEX IF NOT EXISTS idx_traceability_device_so_item
   ON traceability_manager."traceability_device" ("so_id", "item_code");
 
 -- 2. Analytical view for SO -> ITEM-CODE aggregation
+DROP VIEW IF EXISTS traceability_manager.v_so_item_summary CASCADE;
 CREATE OR REPLACE VIEW traceability_manager.v_so_item_summary AS
 SELECT
   so.id AS so_id,

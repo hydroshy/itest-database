@@ -150,7 +150,9 @@ BEGIN
 END $$;
 
 -- 5. Compatibility Views inside devices schema
+DROP VIEW IF EXISTS devices.testing_devices CASCADE;
 CREATE OR REPLACE VIEW devices.testing_devices AS SELECT * FROM devices.devices;
+DROP VIEW IF EXISTS devices.testing_packets CASCADE;
 CREATE OR REPLACE VIEW devices.testing_packets AS SELECT * FROM devices.device_packets;
 
 -- 6. Backward Compatibility Views in system_schema and lorawan_chirpstack

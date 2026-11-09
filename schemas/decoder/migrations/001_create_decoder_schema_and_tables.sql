@@ -72,6 +72,7 @@ END $$;
 
 -- 2. View: v_memmap_decoders
 -- Links memmap_manager.memmap_profiles with decoder.decoder_scripts
+DROP VIEW IF EXISTS decoder.v_memmap_decoders CASCADE;
 CREATE OR REPLACE VIEW decoder.v_memmap_decoders AS
 SELECT 
     COALESCE(p.sku, d.sku) AS sku,

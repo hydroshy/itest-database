@@ -206,6 +206,7 @@ CREATE INDEX IF NOT EXISTS idx_traceability_device_raw_data_gin
   ON traceability_manager."traceability_device" USING GIN ("test_raw_data");
 
 -- 9. Analytical BI View for Metabase: v_device_traceability_lifecycle
+DROP VIEW IF EXISTS traceability_manager.v_device_traceability_lifecycle CASCADE;
 CREATE OR REPLACE VIEW traceability_manager.v_device_traceability_lifecycle AS
 SELECT
   d.id AS device_id,

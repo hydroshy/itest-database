@@ -233,7 +233,9 @@ FOR EACH ROW
 EXECUTE FUNCTION devices.sync_gateway_test_sessions_columns();
 
 -- 5. Re-create / Refresh Views to include new columns
+DROP VIEW IF EXISTS devices.testing_devices CASCADE;
 CREATE OR REPLACE VIEW devices.testing_devices AS SELECT * FROM devices.devices;
+DROP VIEW IF EXISTS devices.testing_packets CASCADE;
 CREATE OR REPLACE VIEW devices.testing_packets AS SELECT * FROM devices.device_packets;
 
 -- Refresh compatibility views in system_schema if exists
