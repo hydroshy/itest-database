@@ -695,4 +695,17 @@ assert.ok(memmapMigration006Sql.includes("^[0-9]+F[0-9]+$"), 'Missing flexible r
 assert.ok(memmapMigration006Sql.includes('CREATE OR REPLACE VIEW memmap_manager.v_memmap_profiles'), 'Missing view recreation in migration 006');
 console.log('✓ Memmap migration 006 flexible numeric XXFXXXX fw_version validated');
 
+// 37. Validate LoRaWAN ChirpStack Migration 006 for simulation_application_id
+const chirpstackMigration006Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/lorawan-chirpstack/migrations/006_add_simulation_app_to_network_servers.sql'),
+  'utf8'
+);
+const freshChirpstackSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/lorawan-chirpstack/schema.sql'), 'utf8');
+assert.ok(freshChirpstackSchemaSql.includes('006_add_simulation_app_to_network_servers.sql'), 'Missing migration 006 in lorawan-chirpstack/schema.sql');
+assert.ok(chirpstackMigration006Sql.includes('ADD COLUMN IF NOT EXISTS "simulation_application_id" VARCHAR(100)'), 'Missing simulation_application_id in migration 006');
+assert.ok(chirpstackMigration006Sql.includes('idx_lorawan_cs_network_servers_sim_app_id'), 'Missing index on simulation_application_id');
+assert.ok(chirpstackMigration006Sql.includes('idx_lorawan_cs_network_servers_tenant_sim_app'), 'Missing composite index (tenant_id, simulation_application_id)');
+assert.ok(chirpstackMigration006Sql.includes('GRANT SELECT, INSERT, UPDATE, DELETE ON lorawan_chirpstack."network_servers" TO itest_system_user'), 'Missing grants to itest_system_user');
+console.log('✓ LoRaWAN ChirpStack migration 006 simulation_application_id validated');
+
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

@@ -11,5 +11,6 @@
 \ir migrations/003_create_gateway_test_sessions.sql
 \ir migrations/004_extend_gateway_test_sessions_metadata.sql
 \ir migrations/005_add_app_and_device_profile_to_network_servers.sql
+\ir migrations/006_add_simulation_app_to_network_servers.sql
 
 
