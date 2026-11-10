@@ -40,25 +40,28 @@ COMMENT ON COLUMN memmap_manager."memmap_profiles"."fw_version" IS 'Phiên bản
 -- 5. Recreate views with updated VARCHAR(100) column
 CREATE OR REPLACE VIEW memmap_manager.v_memmap_profiles AS
 SELECT
-    p.id,
-    p.sku,
-    p.item_code,
-    p.fw_version,
-    COALESCE(p.long_fw, p.fw_version) AS long_fw,
-    p.short_fw,
-    p.name,
-    p.description,
-    p.sensor_connectivity,
-    p.status,
-    p.is_standard,
-    p.created_by,
-    p.created_at,
-    p.updated_at,
-    COALESCE(
-        (SELECT COUNT(*) FROM memmap_manager.memmap_registers r WHERE r.profile_id = p.id),
-        0
-    ) AS total_registers
+  p."id",
+  p."name",
+  p."item_code",
+  p."fw_version",
+  p."sku",
+  p."long_fw",
+  p."short_fw",
+  COALESCE(p."dec_check", true) AS "dec_check",
+  COALESCE(p."hex_check", true) AS "hex_check",
+  p."created_by",
+  p."date_create",
+  p."description",
+  p."source_format",
+  p."created_at",
+  p."updated_at",
+  COALESCE(
+    (SELECT COUNT(*)::int FROM memmap_manager."memmap_registers" r WHERE r."profile_id" = p."id"),
+    0
+  ) AS "registers_count"
 FROM memmap_manager."memmap_profiles" p;
+
+COMMENT ON VIEW memmap_manager.v_memmap_profiles IS 'View danh sách memmap profiles kèm item_code, fw_version và số lượng registers';
 
 DO $$
 BEGIN
