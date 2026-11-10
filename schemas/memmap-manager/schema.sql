@@ -10,3 +10,4 @@
 \ir migrations/003_extend_memmap_registers_metadata.sql
 \ir migrations/004_align_memmap_profiles_and_registers_to_human_spec.sql
 \ir migrations/005_identify_by_item_code_and_fw_version.sql
+\ir migrations/006_relax_fw_version_format_to_flexible_numeric.sql

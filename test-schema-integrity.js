@@ -682,4 +682,17 @@ assert.ok(systemMigration025Sql.includes('END_USER'), 'Missing END_USER in migra
 assert.ok(systemMigration025Sql.includes('DELETE FROM system_schema."roles"'), 'Missing DELETE statement for legacy duplicate roles');
 console.log('✓ System migration 025 duplicate roles cleanup & standardization validated');
 
+// 36. Validate Memmap Manager Migration 006 for flexible numeric XXFXXXX fw_version
+const memmapMigration006Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/memmap-manager/migrations/006_relax_fw_version_format_to_flexible_numeric.sql'),
+  'utf8'
+);
+const freshMemmapSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/memmap-manager/schema.sql'), 'utf8');
+assert.ok(freshMemmapSchemaSql.includes('006_relax_fw_version_format_to_flexible_numeric.sql'), 'Missing migration 006 in memmap-manager/schema.sql');
+assert.ok(memmapMigration006Sql.includes('ALTER COLUMN "fw_version" TYPE VARCHAR(100)'), 'Missing VARCHAR(100) expansion in migration 006');
+assert.ok(memmapMigration006Sql.includes('DROP CONSTRAINT IF EXISTS "chk_memmap_profiles_fw_version"'), 'Missing drop constraint in migration 006');
+assert.ok(memmapMigration006Sql.includes("^[0-9]+F[0-9]+$"), 'Missing flexible regex ^[0-9]+F[0-9]+$ in migration 006');
+assert.ok(memmapMigration006Sql.includes('CREATE OR REPLACE VIEW memmap_manager.v_memmap_profiles'), 'Missing view recreation in migration 006');
+console.log('✓ Memmap migration 006 flexible numeric XXFXXXX fw_version validated');
+
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
