@@ -59,6 +59,7 @@ const requiredFiles = [
   'schemas/system/migrations/023_unify_simulation_flow_autocheck_and_multi_references.sql',
   'schemas/system/migrations/024_create_device_calibration_logs_and_views.sql',
   'schemas/system/migrations/025_cleanup_duplicate_roles_and_standardize_rbac.sql',
+  'schemas/system/migrations/026_add_simulation_devices_to_batches_and_items.sql',
   'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql',
   'scripts/migrate.js'
 ];
@@ -707,5 +708,16 @@ assert.ok(chirpstackMigration006Sql.includes('idx_lorawan_cs_network_servers_sim
 assert.ok(chirpstackMigration006Sql.includes('idx_lorawan_cs_network_servers_tenant_sim_app'), 'Missing composite index (tenant_id, simulation_application_id)');
 assert.ok(chirpstackMigration006Sql.includes('GRANT SELECT, INSERT, UPDATE, DELETE ON lorawan_chirpstack."network_servers" TO itest_system_user'), 'Missing grants to itest_system_user');
 console.log('✓ LoRaWAN ChirpStack migration 006 simulation_application_id validated');
+
+// 38. Validate System Migration 026 add_simulation_devices_to_batches_and_items
+const systemMigration026Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/system/migrations/026_add_simulation_devices_to_batches_and_items.sql'),
+  'utf8'
+);
+assert.ok(systemMigration026Sql.includes('ADD COLUMN IF NOT EXISTS "simulation_devices" JSONB'), 'Missing simulation_devices in migration 026');
+assert.ok(systemMigration026Sql.includes('ADD COLUMN IF NOT EXISTS "simulation_devices_data" JSONB'), 'Missing simulation_devices_data in migration 026');
+assert.ok(systemMigration026Sql.includes('idx_simu_profiles_sim_devices_gin'), 'Missing index idx_simu_profiles_sim_devices_gin');
+assert.ok(systemMigration026Sql.includes('idx_dtest_batches_sim_devices_gin'), 'Missing index idx_dtest_batches_sim_devices_gin');
+console.log('✓ System migration 026 simulation devices validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

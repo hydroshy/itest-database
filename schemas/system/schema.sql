@@ -546,6 +546,7 @@ CREATE TABLE IF NOT EXISTS system_schema."simulation_profiles" (
   "auto_check_criteria" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "reference_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "simulator_device" JSONB DEFAULT NULL,
+  "simulation_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "is_flow_template" BOOLEAN NOT NULL DEFAULT TRUE,
   "metadata" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "created_by" VARCHAR(100) NOT NULL DEFAULT 'admin',
@@ -559,7 +560,8 @@ ALTER TABLE system_schema."simulation_profiles"
   ADD COLUMN IF NOT EXISTS "fw_version" VARCHAR(100),
   ADD COLUMN IF NOT EXISTS "auto_check_criteria" JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS "reference_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
-  ADD COLUMN IF NOT EXISTS "simulator_device" JSONB DEFAULT NULL;
+  ADD COLUMN IF NOT EXISTS "simulator_device" JSONB DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS "simulation_devices" JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_simu_id" ON system_schema."simulation_profiles"("simu_id");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_item_code" ON system_schema."simulation_profiles"("item_code");
@@ -570,6 +572,7 @@ CREATE INDEX IF NOT EXISTS "idx_simu_profiles_flow_blocks_gin" ON system_schema.
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_fw_version" ON system_schema."simulation_profiles"("fw_version");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_auto_check_gin" ON system_schema."simulation_profiles" USING GIN ("auto_check_criteria");
 CREATE INDEX IF NOT EXISTS "idx_simu_profiles_ref_devices_gin" ON system_schema."simulation_profiles" USING GIN ("reference_devices");
+CREATE INDEX IF NOT EXISTS "idx_simu_profiles_sim_devices_gin" ON system_schema."simulation_profiles" USING GIN ("simulation_devices");
 
 -- 13. Simulation Runs Table
 CREATE TABLE IF NOT EXISTS system_schema."simulation_runs" (
@@ -796,6 +799,7 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batches" (
   "auto_check_criteria" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "reference_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "simulator_device" JSONB DEFAULT NULL,
+  "simulation_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "max_devices" INTEGER NOT NULL DEFAULT 10,
   "status" VARCHAR(50) NOT NULL DEFAULT 'CREATED',
   "verdict" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
@@ -810,7 +814,8 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batches" (
 
 ALTER TABLE system_schema."device_test_batches"
   ADD COLUMN IF NOT EXISTS "reference_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
-  ADD COLUMN IF NOT EXISTS "simulator_device" JSONB DEFAULT NULL;
+  ADD COLUMN IF NOT EXISTS "simulator_device" JSONB DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS "simulation_devices" JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 -- Allow legacy orphan IDs, but protect all valid links and new batch writes.
 UPDATE system_schema.device_test_batches b
@@ -867,6 +872,7 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batch_items" (
   "end_counter" BIGINT,
   "reference_window_packet_count" INTEGER,
   "avg_metrics" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  "simulation_devices_data" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "calibration_data" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "logs" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -883,6 +889,7 @@ ALTER TABLE system_schema."device_test_batch_items"
   ADD COLUMN IF NOT EXISTS "end_counter" BIGINT,
   ADD COLUMN IF NOT EXISTS "reference_window_packet_count" INTEGER,
   ADD COLUMN IF NOT EXISTS "avg_metrics" JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS "simulation_devices_data" JSONB NOT NULL DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS "calibration_data" JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 CREATE INDEX IF NOT EXISTS "idx_dtest_batches_item_fw"
@@ -912,6 +919,7 @@ SELECT
   b."auto_check_criteria",
   b."reference_devices",
   b."simulator_device",
+  b."simulation_devices",
   b."max_devices",
   b."status",
   b."verdict",
@@ -976,6 +984,7 @@ SELECT
     (i."comparison_result"->>'snr')::numeric
   ) AS "avg_snr",
   i."reference_devices_data",
+  i."simulation_devices_data",
   i."window_packet_count",
   i."start_counter",
   i."end_counter",
@@ -1153,6 +1162,7 @@ SELECT
   END AS "rule_count",
   p."reference_devices",
   p."simulator_device",
+  p."simulation_devices",
   p."created_by",
   p."created_at",
   p."updated_at"
