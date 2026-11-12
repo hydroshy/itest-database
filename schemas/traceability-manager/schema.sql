@@ -106,6 +106,10 @@ CREATE TABLE IF NOT EXISTS traceability_manager."traceability_device" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- CREATE TABLE IF NOT EXISTS does not add columns to existing installations.
+ALTER TABLE traceability_manager."traceability_device"
+  ADD COLUMN IF NOT EXISTS "test_batch_id" UUID;
+
 COMMENT ON TABLE traceability_manager."traceability_device" IS 'Quản lý từng thiết bị cá thể, liên kết SO/WA và dữ liệu kiểm thử phần cứng';
 COMMENT ON COLUMN traceability_manager."traceability_device"."id" IS 'Khóa chính UUID duy nhất';
 COMMENT ON COLUMN traceability_manager."traceability_device"."so_id" IS 'Tham chiếu tới traceability_so(id) (bắt buộc)';

@@ -747,6 +747,9 @@ assert.ok(traceMigration007Sql.includes('v_device_test_metrics_report'), 'Missin
 assert.ok(traceMigration007Sql.includes('v_device_traceability_lifecycle'), 'Missing v_device_traceability_lifecycle in migration 007');
 const freshTraceSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/traceability-manager/schema.sql'), 'utf8');
 assert.ok(freshTraceSchemaSql.includes('"test_batch_id" UUID'), 'Missing test_batch_id in traceability schema.sql');
+const traceBatchAlter = freshTraceSchemaSql.indexOf('ADD COLUMN IF NOT EXISTS "test_batch_id" UUID');
+const traceBatchComment = freshTraceSchemaSql.indexOf('COMMENT ON COLUMN traceability_manager."traceability_device"."test_batch_id"');
+assert.ok(traceBatchAlter !== -1 && traceBatchAlter < traceBatchComment, 'Existing traceability tables must receive test_batch_id before its comment');
 console.log('✓ Traceability migration 007 test_batch_id validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
