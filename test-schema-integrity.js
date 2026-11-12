@@ -745,6 +745,7 @@ assert.ok(traceMigration007Sql.includes('ADD COLUMN IF NOT EXISTS "test_batch_id
 assert.ok(traceMigration007Sql.includes('idx_traceability_device_test_batch_id'), 'Missing idx_traceability_device_test_batch_id in migration 007');
 assert.ok(traceMigration007Sql.includes('v_device_test_metrics_report'), 'Missing v_device_test_metrics_report in migration 007');
 assert.ok(traceMigration007Sql.includes('v_device_traceability_lifecycle'), 'Missing v_device_traceability_lifecycle in migration 007');
+assert.ok(!/\b(?:so|wa)\.status\b/i.test(traceMigration007Sql), 'Migration 007 must not reference nonexistent SO/WA status columns');
 const freshTraceSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/traceability-manager/schema.sql'), 'utf8');
 assert.ok(freshTraceSchemaSql.includes('"test_batch_id" UUID'), 'Missing test_batch_id in traceability schema.sql');
 const traceBatchAlter = freshTraceSchemaSql.indexOf('ADD COLUMN IF NOT EXISTS "test_batch_id" UUID');

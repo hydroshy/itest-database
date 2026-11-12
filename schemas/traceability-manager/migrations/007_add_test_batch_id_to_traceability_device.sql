@@ -104,11 +104,9 @@ SELECT
   so.id AS so_id,
   so.so_number,
   so.customer_name,
-  so.status AS so_status,
   wa.id AS wa_id,
   wa.wa_number,
   wa.planned_quantity AS wa_planned_quantity,
-  wa.status AS wa_status,
   COALESCE(
     (d.test_raw_data->'comparison'->>'avg_cycle')::numeric,
     (d.test_raw_data->>'avg_cycle')::numeric,
