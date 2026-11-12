@@ -60,7 +60,9 @@ const requiredFiles = [
   'schemas/system/migrations/024_create_device_calibration_logs_and_views.sql',
   'schemas/system/migrations/025_cleanup_duplicate_roles_and_standardize_rbac.sql',
   'schemas/system/migrations/026_add_simulation_devices_to_batches_and_items.sql',
+  'schemas/system/migrations/027_add_test_batch_id_and_simulation_vars.sql',
   'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql',
+  'schemas/traceability-manager/migrations/007_add_test_batch_id_to_traceability_device.sql',
   'scripts/migrate.js'
 ];
 
@@ -719,5 +721,32 @@ assert.ok(systemMigration026Sql.includes('ADD COLUMN IF NOT EXISTS "simulation_d
 assert.ok(systemMigration026Sql.includes('idx_simu_profiles_sim_devices_gin'), 'Missing index idx_simu_profiles_sim_devices_gin');
 assert.ok(systemMigration026Sql.includes('idx_dtest_batches_sim_devices_gin'), 'Missing index idx_dtest_batches_sim_devices_gin');
 console.log('✓ System migration 026 simulation devices validated');
+
+// 39. Validate System Migration 027 add_test_batch_id_and_simulation_vars
+const systemMigration027Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/system/migrations/027_add_test_batch_id_and_simulation_vars.sql'),
+  'utf8'
+);
+assert.ok(systemMigration027Sql.includes('ADD COLUMN IF NOT EXISTS "test_batch_id" UUID'), 'Missing test_batch_id in migration 027');
+assert.ok(systemMigration027Sql.includes('idx_dtest_reg_test_batch_id'), 'Missing idx_dtest_reg_test_batch_id in migration 027');
+assert.ok(systemMigration027Sql.includes('ADD COLUMN IF NOT EXISTS "simulation_vars" JSONB'), 'Missing simulation_vars in migration 027');
+assert.ok(systemMigration027Sql.includes('v_list_device_testing'), 'Missing v_list_device_testing in migration 027');
+const freshSystemSchemaSql4 = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
+assert.ok(freshSystemSchemaSql4.includes('"test_batch_id" UUID'), 'Missing test_batch_id in system schema.sql');
+assert.ok(freshSystemSchemaSql4.includes('"simulation_vars" JSONB'), 'Missing simulation_vars in system schema.sql');
+console.log('✓ System migration 027 test_batch_id & simulation_vars validated');
+
+// 40. Validate Traceability Migration 007 add_test_batch_id_to_traceability_device
+const traceMigration007Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/traceability-manager/migrations/007_add_test_batch_id_to_traceability_device.sql'),
+  'utf8'
+);
+assert.ok(traceMigration007Sql.includes('ADD COLUMN IF NOT EXISTS "test_batch_id" UUID'), 'Missing test_batch_id in traceability migration 007');
+assert.ok(traceMigration007Sql.includes('idx_traceability_device_test_batch_id'), 'Missing idx_traceability_device_test_batch_id in migration 007');
+assert.ok(traceMigration007Sql.includes('v_device_test_metrics_report'), 'Missing v_device_test_metrics_report in migration 007');
+assert.ok(traceMigration007Sql.includes('v_device_traceability_lifecycle'), 'Missing v_device_traceability_lifecycle in migration 007');
+const freshTraceSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/traceability-manager/schema.sql'), 'utf8');
+assert.ok(freshTraceSchemaSql.includes('"test_batch_id" UUID'), 'Missing test_batch_id in traceability schema.sql');
+console.log('✓ Traceability migration 007 test_batch_id validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

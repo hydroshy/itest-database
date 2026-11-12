@@ -684,6 +684,7 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_registrations" (
   "error_detail" TEXT,
   "device_id" UUID,
   "is_reference" BOOLEAN NOT NULL DEFAULT false,
+  "test_batch_id" UUID,
   "created_by" VARCHAR(100) NOT NULL DEFAULT 'tester',
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -693,10 +694,12 @@ ALTER TABLE system_schema."device_test_registrations"
   ADD COLUMN IF NOT EXISTS "application_id" VARCHAR(100),
   ADD COLUMN IF NOT EXISTS "device_profile_id" VARCHAR(100),
   ADD COLUMN IF NOT EXISTS "is_reference" BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS "long_fw" VARCHAR(255);
+  ADD COLUMN IF NOT EXISTS "long_fw" VARCHAR(255),
+  ADD COLUMN IF NOT EXISTS "test_batch_id" UUID;
 
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_dev_eui" ON system_schema."device_test_registrations"("dev_eui");
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_serial_number" ON system_schema."device_test_registrations"("serial_number");
+CREATE INDEX IF NOT EXISTS "idx_dtest_reg_test_batch_id" ON system_schema."device_test_registrations"("test_batch_id");
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_so_number" ON system_schema."device_test_registrations"("so_number");
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_wa_number" ON system_schema."device_test_registrations"("wa_number");
 CREATE INDEX IF NOT EXISTS "idx_dtest_reg_item_code" ON system_schema."device_test_registrations"("item_code");
@@ -755,7 +758,8 @@ SELECT
   r."error_detail",
   r."created_at",
   r."updated_at",
-  COALESCE(r."is_reference", false) AS "is_reference"
+  COALESCE(r."is_reference", false) AS "is_reference",
+  r."test_batch_id"
 FROM system_schema."device_test_registrations" r
 LEFT JOIN lorawan_chirpstack."network_servers" ns
   ON (r."network_server_id" = ns."id");
@@ -806,6 +810,7 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batches" (
   "duration_seconds" INTEGER NOT NULL DEFAULT 0,
   "started_at" TIMESTAMPTZ,
   "finished_at" TIMESTAMPTZ,
+  "simulation_vars" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "created_by" VARCHAR(100) NOT NULL DEFAULT 'tester',
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -815,7 +820,23 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batches" (
 ALTER TABLE system_schema."device_test_batches"
   ADD COLUMN IF NOT EXISTS "reference_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
   ADD COLUMN IF NOT EXISTS "simulator_device" JSONB DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS "simulation_devices" JSONB NOT NULL DEFAULT '[]'::jsonb;
+  ADD COLUMN IF NOT EXISTS "simulation_devices" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS "simulation_vars" JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- Each execution keeps its own immutable-at-completion result snapshot.
+CREATE TABLE IF NOT EXISTS system_schema.device_test_batch_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  batch_id UUID NOT NULL REFERENCES system_schema.device_test_batches(id) ON DELETE CASCADE,
+  status VARCHAR(50) NOT NULL DEFAULT 'RUNNING',
+  verdict VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  started_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  finished_at TIMESTAMPTZ,
+  result JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+CREATE INDEX IF NOT EXISTS idx_dtest_batch_sessions_batch_started
+  ON system_schema.device_test_batch_sessions (batch_id, started_at DESC);
+ALTER TABLE system_schema.device_test_batches
+  ADD COLUMN IF NOT EXISTS current_session_id UUID;
 
 -- Allow legacy orphan IDs, but protect all valid links and new batch writes.
 UPDATE system_schema.device_test_batches b
@@ -873,6 +894,7 @@ CREATE TABLE IF NOT EXISTS system_schema."device_test_batch_items" (
   "reference_window_packet_count" INTEGER,
   "avg_metrics" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "simulation_devices_data" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  "simulation_vars" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "calibration_data" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "logs" JSONB NOT NULL DEFAULT '[]'::jsonb,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -890,6 +912,7 @@ ALTER TABLE system_schema."device_test_batch_items"
   ADD COLUMN IF NOT EXISTS "reference_window_packet_count" INTEGER,
   ADD COLUMN IF NOT EXISTS "avg_metrics" JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS "simulation_devices_data" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS "simulation_vars" JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS "calibration_data" JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 CREATE INDEX IF NOT EXISTS "idx_dtest_batches_item_fw"
@@ -920,6 +943,7 @@ SELECT
   b."reference_devices",
   b."simulator_device",
   b."simulation_devices",
+  b."simulation_vars",
   b."max_devices",
   b."status",
   b."verdict",

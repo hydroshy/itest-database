@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS traceability_manager."traceability_device" (
   "fw_version" VARCHAR(50),
   "test_result" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
   "test_id" VARCHAR(255),
+  "test_batch_id" UUID,
   "test_station" VARCHAR(100),
   "test_person" VARCHAR(100),
   "tested_at" TIMESTAMPTZ,
@@ -118,6 +119,7 @@ COMMENT ON COLUMN traceability_manager."traceability_device"."hw_version" IS 'Ph
 COMMENT ON COLUMN traceability_manager."traceability_device"."fw_version" IS 'Phiên bản firmware (ví dụ: 5F0917)';
 COMMENT ON COLUMN traceability_manager."traceability_device"."test_result" IS 'Kết quả kiểm tra phần cứng từ máy test (PASS, FAIL, PENDING). Điều kiện tiên quyết: chỉ PASS mới cho phép Final Config';
 COMMENT ON COLUMN traceability_manager."traceability_device"."test_id" IS 'Mã định danh lần test từ trạm đo';
+COMMENT ON COLUMN traceability_manager."traceability_device"."test_batch_id" IS 'Khóa ngoại / UUID của Device Test Batch (system_schema.device_test_batches.id) gán với thiết bị';
 COMMENT ON COLUMN traceability_manager."traceability_device"."test_station" IS 'Tên trạm đo kiểm (ví dụ: STATION-EN-3)';
 COMMENT ON COLUMN traceability_manager."traceability_device"."test_person" IS 'Kỹ thuật viên thực hiện đo kiểm (ví dụ: DO QUANG KHANH)';
 COMMENT ON COLUMN traceability_manager."traceability_device"."tested_at" IS 'Thời điểm đo kiểm hoàn tất';
@@ -144,6 +146,7 @@ CREATE INDEX IF NOT EXISTS idx_traceability_device_serial ON traceability_manage
 CREATE INDEX IF NOT EXISTS idx_traceability_device_device_key ON traceability_manager."traceability_device" ("device_key");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_deveui ON traceability_manager."traceability_device" ("dev_eui");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_test_result ON traceability_manager."traceability_device" ("test_result");
+CREATE INDEX IF NOT EXISTS idx_traceability_device_test_batch_id ON traceability_manager."traceability_device" ("test_batch_id");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_config_status ON traceability_manager."traceability_device" ("config_status");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_status ON traceability_manager."traceability_device" ("status");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_item_code ON traceability_manager."traceability_device" ("item_code");
