@@ -47,7 +47,7 @@ services:
         mkdir -p /opt && ln -sfn "$$WORKDIR/schemas" /opt/schemas
 
         psql -X -v ON_ERROR_STOP=1 -f init-scripts/01-init-databases.sql
-        for schema_dir in system plugins ops-agent lorawan-chirpstack memmap-manager finalconfig-manager traceability-manager devices decoder; do
+        for schema_dir in lorawan-chirpstack memmap-manager finalconfig-manager traceability-manager system plugins ops-agent devices decoder; do
           psql -X -v ON_ERROR_STOP=1 -f "schemas/$$schema_dir/schema.sql"
         done
 
