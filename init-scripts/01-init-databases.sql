@@ -21,6 +21,23 @@ CREATE SCHEMA IF NOT EXISTS traceability_manager;
 CREATE SCHEMA IF NOT EXISTS devices;
 CREATE SCHEMA IF NOT EXISTS decoder;
 
+-- Standard trigger helpers for schemas
+CREATE OR REPLACE FUNCTION system_schema.set_current_timestamp_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION devices.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- 3. Create Dedicated Service Roles / Users
 DO $$
 BEGIN

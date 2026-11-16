@@ -54,6 +54,15 @@ CREATE INDEX IF NOT EXISTS idx_devices_status ON devices.devices(status);
 CREATE INDEX IF NOT EXISTS idx_devices_last_seen ON devices.devices(last_seen DESC);
 CREATE INDEX IF NOT EXISTS idx_devices_metadata_gin ON devices.devices USING GIN (metadata);
 
+-- Trigger helper for updated_at
+CREATE OR REPLACE FUNCTION devices.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Trigger for sync_device_serial_and_deveui and updated_at
 CREATE OR REPLACE FUNCTION devices.sync_device_serial_and_deveui()
 RETURNS TRIGGER AS $$

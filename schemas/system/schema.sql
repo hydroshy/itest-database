@@ -9,6 +9,15 @@
 
 SET search_path TO system_schema, public;
 
+-- Trigger helper for updated_at
+CREATE OR REPLACE FUNCTION system_schema.set_current_timestamp_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- 1. Permissions Table
 CREATE TABLE IF NOT EXISTS system_schema."permission" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),

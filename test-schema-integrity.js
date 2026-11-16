@@ -758,4 +758,11 @@ const traceBatchComment = freshTraceSchemaSql.indexOf('COMMENT ON COLUMN traceab
 assert.ok(traceBatchAlter !== -1 && traceBatchAlter < traceBatchComment, 'Existing traceability tables must receive test_batch_id before its comment');
 console.log('✓ Traceability migration 007 test_batch_id validated');
 
+// 41. Validate trigger helpers in system and devices schemas
+const systemSchemaSqlForTriggers = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
+assert.ok(systemSchemaSqlForTriggers.includes('CREATE OR REPLACE FUNCTION system_schema.set_current_timestamp_updated_at()'), 'Missing set_current_timestamp_updated_at() in system/schema.sql');
+const devicesSchemaSqlForTriggers = fs.readFileSync(path.join(__dirname, 'schemas/devices/schema.sql'), 'utf8');
+assert.ok(devicesSchemaSqlForTriggers.includes('CREATE OR REPLACE FUNCTION devices.update_updated_at_column()'), 'Missing update_updated_at_column() in devices/schema.sql');
+console.log('✓ Trigger helpers in system and devices schemas validated');
+
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
