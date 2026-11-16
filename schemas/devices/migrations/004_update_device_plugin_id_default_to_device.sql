@@ -66,7 +66,10 @@ BEGIN
     ) THEN
         EXECUTE 'DROP VIEW system_schema.devices CASCADE';
         EXECUTE 'CREATE VIEW system_schema.devices AS SELECT * FROM devices.devices';
-        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.devices TO itest_system_user, itest_plugins_user, itest_admin';
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.devices TO itest_system_user, itest_plugins_user';
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'itest_admin') THEN
+            EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.devices TO itest_admin';
+        END IF;
     END IF;
 
     IF EXISTS (
@@ -83,7 +86,10 @@ BEGIN
     ) THEN
         EXECUTE 'DROP VIEW IF EXISTS system_schema.testing_devices CASCADE';
         EXECUTE 'CREATE VIEW system_schema.testing_devices AS SELECT * FROM devices.devices';
-        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.testing_devices TO itest_system_user, itest_plugins_user, itest_admin';
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.testing_devices TO itest_system_user, itest_plugins_user';
+        IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'itest_admin') THEN
+            EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON system_schema.testing_devices TO itest_admin';
+        END IF;
     END IF;
 END $$;
 

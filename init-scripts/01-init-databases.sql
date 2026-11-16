@@ -56,6 +56,10 @@ BEGIN
   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_ops_user') THEN
     CREATE ROLE itest_ops_user WITH LOGIN PASSWORD 'ops_secret_2026';
   END IF;
+
+  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_admin') THEN
+    CREATE ROLE itest_admin WITH LOGIN PASSWORD 'admin_secret_2026';
+  END IF;
 END $$;
 
 -- 4. Grant Schema Usage & Privileges (Least Privilege Isolation)
