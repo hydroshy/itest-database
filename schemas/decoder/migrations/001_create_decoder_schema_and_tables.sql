@@ -62,11 +62,16 @@ BEGIN
             created_at, updated_at, created_by
         )
         SELECT 
-            id, sku, long_fw, protocol, script, description, input_format, 
-            sample_payload, sample_fport, sample_decoded, is_active, metadata, 
-            created_at, updated_at, created_by
-        FROM plugins_schema.decoder_scripts
-        ON CONFLICT (sku, long_fw) DO NOTHING;
+            s.id, s.sku, s.long_fw, s.protocol, s.script, s.description, s.input_format, 
+            s.sample_payload, s.sample_fport, s.sample_decoded, s.is_active, s.metadata, 
+            s.created_at, s.updated_at, s.created_by
+        FROM plugins_schema.decoder_scripts s
+        WHERE NOT EXISTS (
+            SELECT 1 FROM decoder.decoder_scripts d 
+            WHERE d.id = s.id 
+               OR (s.sku IS NOT NULL AND s.long_fw IS NOT NULL AND d.sku = s.sku AND d.long_fw = s.long_fw)
+        )
+        ON CONFLICT DO NOTHING;
     END IF;
 END $$;
 
