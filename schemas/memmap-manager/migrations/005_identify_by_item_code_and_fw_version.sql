@@ -102,6 +102,12 @@ BEGIN
     GRANT SELECT ON plugins_schema.v_memmap_profiles TO itest_plugins_user;
   END IF;
 
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugins_user') THEN
+    GRANT ALL PRIVILEGES ON TABLE memmap_manager."memmap_profiles" TO itest_plugins_user;
+    GRANT SELECT ON memmap_manager.v_memmap_profiles TO itest_plugins_user;
+    GRANT SELECT ON plugins_schema.v_memmap_profiles TO itest_plugins_user;
+  END IF;
+
   IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugin_user') THEN
     GRANT ALL PRIVILEGES ON TABLE memmap_manager."memmap_profiles" TO itest_plugin_user;
     GRANT SELECT ON memmap_manager.v_memmap_profiles TO itest_plugin_user;

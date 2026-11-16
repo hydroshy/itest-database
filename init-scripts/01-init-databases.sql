@@ -32,6 +32,10 @@ BEGIN
     CREATE ROLE itest_plugins_user WITH LOGIN PASSWORD 'plugins_secret_2026';
   END IF;
 
+  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugin_user') THEN
+    CREATE ROLE itest_plugin_user WITH LOGIN PASSWORD 'plugins_secret_2026';
+  END IF;
+
   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_ops_user') THEN
     CREATE ROLE itest_ops_user WITH LOGIN PASSWORD 'ops_secret_2026';
   END IF;

@@ -92,6 +92,9 @@ BEGIN
     IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_system_user') THEN
       EXECUTE 'GRANT SELECT ON TABLE traceability_manager.v_device_traceability_lifecycle TO itest_system_user';
     END IF;
+    IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugins_user') THEN
+      EXECUTE 'GRANT SELECT ON TABLE traceability_manager.v_device_traceability_lifecycle TO itest_plugins_user';
+    END IF;
     IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugin_user') THEN
       EXECUTE 'GRANT SELECT ON TABLE traceability_manager.v_device_traceability_lifecycle TO itest_plugin_user';
     END IF;
@@ -103,6 +106,10 @@ DO $$
 BEGIN
   IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_system_user') THEN
     GRANT SELECT ON TABLE traceability_manager.v_so_item_summary TO itest_system_user;
+  END IF;
+
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugins_user') THEN
+    GRANT SELECT ON TABLE traceability_manager.v_so_item_summary TO itest_plugins_user;
   END IF;
 
   IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugin_user') THEN

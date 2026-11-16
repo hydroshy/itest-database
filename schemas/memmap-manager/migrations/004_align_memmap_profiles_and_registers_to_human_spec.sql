@@ -216,6 +216,18 @@ CREATE INDEX IF NOT EXISTS "idx_memmap_registers_modbus_dec"
   ON memmap_manager."memmap_registers" ("profile_id", "modbus_register_dec");
 
 -- Permissions for runtime users
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA memmap_manager TO itest_system_user;
-GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA memmap_manager TO itest_system_user;
-GRANT SELECT ON ALL TABLES IN SCHEMA memmap_manager TO itest_plugin_user;
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_system_user') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA memmap_manager TO itest_system_user;
+    GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA memmap_manager TO itest_system_user;
+  END IF;
+
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugins_user') THEN
+    GRANT SELECT ON ALL TABLES IN SCHEMA memmap_manager TO itest_plugins_user;
+  END IF;
+
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugin_user') THEN
+    GRANT SELECT ON ALL TABLES IN SCHEMA memmap_manager TO itest_plugin_user;
+  END IF;
+END $$;

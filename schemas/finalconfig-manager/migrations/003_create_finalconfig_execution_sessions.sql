@@ -71,8 +71,20 @@ CREATE INDEX IF NOT EXISTS "idx_finalconfig_exec_log_created"
   ON finalconfig_manager."finalconfig_execution_log" ("created_at" DESC);
 
 -- 5. Grant Permissions to Runtime Roles (Idempotent)
-GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_session" TO itest_system_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_log" TO itest_system_user;
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_system_user') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_session" TO itest_system_user;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_log" TO itest_system_user;
+  END IF;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_session" TO itest_plugin_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_log" TO itest_plugin_user;
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugins_user') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_session" TO itest_plugins_user;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_log" TO itest_plugins_user;
+  END IF;
+
+  IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'itest_plugin_user') THEN
+    GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_session" TO itest_plugin_user;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON finalconfig_manager."finalconfig_execution_log" TO itest_plugin_user;
+  END IF;
+END $$;
