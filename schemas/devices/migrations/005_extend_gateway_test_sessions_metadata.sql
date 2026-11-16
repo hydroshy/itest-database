@@ -18,8 +18,17 @@
 
 -- 0. Drop dependent views first to avoid view column dependency rules during table modification
 DROP VIEW IF EXISTS lorawan_chirpstack.v_gateway_test_sessions_detail CASCADE;
-DROP VIEW IF EXISTS lorawan_chirpstack.gateway_test_sessions CASCADE;
 DROP VIEW IF EXISTS devices.v_gateway_test_sessions_detail CASCADE;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'lorawan_chirpstack' AND c.relname = 'gateway_test_sessions' AND c.relkind = 'v'
+    ) THEN
+        EXECUTE 'DROP VIEW lorawan_chirpstack.gateway_test_sessions CASCADE';
+    END IF;
+END $$;
 
 DO $$
 BEGIN
@@ -178,7 +187,19 @@ EXECUTE FUNCTION devices.sync_gateway_test_sessions_columns();
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'lorawan_chirpstack') THEN
-        DROP VIEW IF EXISTS lorawan_chirpstack.gateway_test_sessions CASCADE;
+        IF EXISTS (
+            SELECT 1 FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'lorawan_chirpstack' AND c.relname = 'gateway_test_sessions' AND c.relkind = 'v'
+        ) THEN
+            EXECUTE 'DROP VIEW lorawan_chirpstack.gateway_test_sessions CASCADE';
+        ELSIF EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'lorawan_chirpstack' AND table_name = 'gateway_test_sessions'
+            AND table_type = 'BASE TABLE'
+        ) THEN
+            EXECUTE 'DROP TABLE lorawan_chirpstack.gateway_test_sessions CASCADE';
+        END IF;
         EXECUTE 'CREATE OR REPLACE VIEW lorawan_chirpstack.gateway_test_sessions AS SELECT * FROM devices.gateway_test_sessions';
 
         -- Detail view with network_servers join if network_servers table exists
