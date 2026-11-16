@@ -52,7 +52,7 @@ services:
         done
 
         # Existing SQL is replayed in order. Stop on first error; inspect before retry.
-        for schema_dir in system plugins ops-agent lorawan-chirpstack memmap-manager finalconfig-manager traceability-manager devices decoder; do
+        for schema_dir in lorawan-chirpstack memmap-manager finalconfig-manager traceability-manager system plugins ops-agent devices decoder; do
           for migration in "schemas/$$schema_dir/migrations/"*.sql; do
             [ -f "$$migration" ] || continue
             echo ">>> $$migration"
