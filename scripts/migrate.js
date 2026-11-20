@@ -196,7 +196,18 @@ async function showStatus(client) {
 
   // Schema Table Counts
   console.log(`\n-- Schemas & Tables Overview --`);
-  const schemas = ['system_schema', 'plugins_schema', 'ops_schema', 'lorawan_chirpstack', 'memmap_manager'];
+  const schemas = [
+    'system_schema',
+    'plugins_schema',
+    'ops_schema',
+    'lorawan_chirpstack',
+    'memmap_manager',
+    'finalconfig_manager',
+    'preconfig_manager',
+    'traceability_manager',
+    'devices',
+    'decoder'
+  ];
   for (const s of schemas) {
     const res = await client.query(`
       SELECT table_name 
