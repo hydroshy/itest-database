@@ -47,12 +47,12 @@ services:
         mkdir -p /opt && ln -sfn "$$WORKDIR/schemas" /opt/schemas
 
         psql -X -v ON_ERROR_STOP=1 -f init-scripts/01-init-databases.sql
-        for schema_dir in lorawan-chirpstack memmap-manager finalconfig-manager traceability-manager system plugins ops-agent devices decoder; do
+        for schema_dir in lorawan-chirpstack memmap-manager finalconfig-manager preconfig-manager traceability-manager system plugins ops-agent devices decoder; do
           psql -X -v ON_ERROR_STOP=1 -f "schemas/$$schema_dir/schema.sql"
         done
 
         # Existing SQL is replayed in order. Stop on first error; inspect before retry.
-        for schema_dir in lorawan-chirpstack memmap-manager finalconfig-manager traceability-manager system plugins ops-agent devices decoder; do
+        for schema_dir in lorawan-chirpstack memmap-manager finalconfig-manager preconfig-manager traceability-manager system plugins ops-agent devices decoder; do
           for migration in "schemas/$$schema_dir/migrations/"*.sql; do
             [ -f "$$migration" ] || continue
             echo ">>> $$migration"

@@ -93,7 +93,7 @@ console.log('✓ Runtime grant migration repairs existing PostgreSQL volumes');
 // 3. Validate 02-init-tables.sql includes lorawan-chirpstack schema.sql
 const initTablesSql = fs.readFileSync(path.join(__dirname, 'init-scripts/02-init-tables.sql'), 'utf8');
 assert.ok(initTablesSql.includes('/opt/schemas/lorawan-chirpstack/schema.sql'), 'Missing include for lorawan-chirpstack in 02-init-tables.sql');
-const requiredSchemaOrder = ['lorawan-chirpstack', 'memmap-manager', 'finalconfig-manager', 'traceability-manager', 'system', 'plugins'];
+const requiredSchemaOrder = ['lorawan-chirpstack', 'memmap-manager', 'finalconfig-manager', 'preconfig-manager', 'traceability-manager', 'system', 'plugins'];
 const dockgeCompose = fs.readFileSync(path.join(__dirname, 'docker-compose.dockge.yml'), 'utf8');
 const positions = requiredSchemaOrder.map(schema => initTablesSql.indexOf(`/opt/schemas/${schema}/schema.sql`));
 assert.ok(positions.every((position, index) => position >= 0 && (index === 0 || position > positions[index - 1])), 'Fresh schema init must create dependencies before system');
