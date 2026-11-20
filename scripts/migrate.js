@@ -62,6 +62,11 @@ const SOURCES = {
     dir: path.join(SCHEMAS_DIR, 'finalconfig-manager/migrations'),
     schema: 'finalconfig_manager'
   },
+  'preconfig-manager': {
+    name: 'Preconfig Manager Plugin',
+    dir: path.join(SCHEMAS_DIR, 'preconfig-manager/migrations'),
+    schema: 'preconfig_manager'
+  },
   'traceability-manager': {
     name: 'Traceability Manager Plugin',
     dir: path.join(SCHEMAS_DIR, 'traceability-manager/migrations'),
