@@ -28,6 +28,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS finalconfig_manager."finalconfig_profile" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "so_number" VARCHAR(50) NOT NULL,
+  "wa_number" VARCHAR(50),
   "item_code" VARCHAR(100) NOT NULL,
   "connectivity" VARCHAR(20) NOT NULL,
   "sku" VARCHAR(100) NOT NULL,
@@ -69,6 +70,9 @@ CREATE INDEX IF NOT EXISTS "idx_finalconfig_profile_sku_fw"
 
 CREATE INDEX IF NOT EXISTS "idx_finalconfig_profile_so"
   ON finalconfig_manager."finalconfig_profile" ("so_number");
+
+CREATE INDEX IF NOT EXISTS "idx_finalconfig_profile_wa"
+  ON finalconfig_manager."finalconfig_profile" ("wa_number");
 
 CREATE INDEX IF NOT EXISTS "idx_finalconfig_profile_created_at"
   ON finalconfig_manager."finalconfig_profile" ("created_at" DESC);

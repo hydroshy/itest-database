@@ -765,4 +765,16 @@ const devicesSchemaSqlForTriggers = fs.readFileSync(path.join(__dirname, 'schema
 assert.ok(devicesSchemaSqlForTriggers.includes('CREATE OR REPLACE FUNCTION devices.update_updated_at_column()'), 'Missing update_updated_at_column() in devices/schema.sql');
 console.log('✓ Trigger helpers in system and devices schemas validated');
 
+// 42. Validate Finalconfig Migration 004 add_wa_number_to_finalconfig_profile
+const finalConfigMigration004Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/finalconfig-manager/migrations/004_add_wa_number_to_finalconfig_profile.sql'),
+  'utf8'
+);
+assert.ok(finalConfigMigration004Sql.includes('"wa_number" VARCHAR(50)'), 'Missing wa_number in finalconfig migration 004');
+assert.ok(finalConfigMigration004Sql.includes('idx_finalconfig_profile_wa'), 'Missing idx_finalconfig_profile_wa in migration 004');
+const freshFinalConfigSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/finalconfig-manager/schema.sql'), 'utf8');
+assert.ok(freshFinalConfigSchemaSql.includes('"wa_number" VARCHAR(50)'), 'Missing wa_number in finalconfig schema.sql');
+assert.ok(freshFinalConfigSchemaSql.includes('idx_finalconfig_profile_wa'), 'Missing idx_finalconfig_profile_wa in schema.sql');
+console.log('✓ Finalconfig migration 004 wa_number validated');
+
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
