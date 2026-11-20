@@ -42,6 +42,9 @@ CREATE TABLE IF NOT EXISTS finalconfig_manager."finalconfig_profile" (
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE finalconfig_manager."finalconfig_profile"
+  ADD COLUMN IF NOT EXISTS "wa_number" VARCHAR(50);
+
 DROP TRIGGER IF EXISTS trg_finalconfig_profile_updated_at ON finalconfig_manager."finalconfig_profile";
 CREATE TRIGGER trg_finalconfig_profile_updated_at
 BEFORE UPDATE ON finalconfig_manager."finalconfig_profile"

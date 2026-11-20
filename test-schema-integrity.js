@@ -775,6 +775,9 @@ assert.ok(finalConfigMigration004Sql.includes('idx_finalconfig_profile_wa'), 'Mi
 const freshFinalConfigSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/finalconfig-manager/schema.sql'), 'utf8');
 assert.ok(freshFinalConfigSchemaSql.includes('"wa_number" VARCHAR(50)'), 'Missing wa_number in finalconfig schema.sql');
 assert.ok(freshFinalConfigSchemaSql.includes('idx_finalconfig_profile_wa'), 'Missing idx_finalconfig_profile_wa in schema.sql');
+const waAlterIndex = freshFinalConfigSchemaSql.indexOf('ADD COLUMN IF NOT EXISTS "wa_number"');
+const waIndex = freshFinalConfigSchemaSql.indexOf('idx_finalconfig_profile_wa');
+assert.ok(waAlterIndex !== -1 && waAlterIndex < waIndex, 'Existing finalconfig_profile table must receive wa_number before creating its index');
 console.log('✓ Finalconfig migration 004 wa_number validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
