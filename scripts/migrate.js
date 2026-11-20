@@ -231,8 +231,8 @@ async function main() {
     }
 
     if (!targetSource || targetSource === 'all') {
-      // Run init first if pending, then schemas
-      for (const key of ['init', 'system', 'plugins', 'lorawan-chirpstack', 'memmap-manager', 'ops-agent']) {
+      // Run all configured migration sources in declaration order
+      for (const key of Object.keys(SOURCES)) {
         await migrateSource(client, key);
       }
     } else if (SOURCES[targetSource]) {
