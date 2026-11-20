@@ -16,6 +16,13 @@ BEGIN
     ALTER TABLE finalconfig_manager."finalconfig_profile" 
       ADD COLUMN "wa_number" VARCHAR(50);
   END IF;
+  -- Ensure registration of migration if not present
+  INSERT INTO finalconfig_manager."_migrations" ("migration_name", "batch")
+  SELECT '004_add_wa_number_to_finalconfig_profile.sql', 1
+  WHERE NOT EXISTS (
+    SELECT 1 FROM finalconfig_manager."_migrations" 
+    WHERE "migration_name" = '004_add_wa_number_to_finalconfig_profile.sql'
+  );
 END $$;
 
 CREATE INDEX IF NOT EXISTS "idx_finalconfig_profile_wa"
