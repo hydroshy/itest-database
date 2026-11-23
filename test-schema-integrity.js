@@ -64,6 +64,7 @@ const requiredFiles = [
   'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql',
   'schemas/traceability-manager/migrations/007_add_test_batch_id_to_traceability_device.sql',
   'schemas/traceability-manager/migrations/008_add_app_key_and_config_person_to_traceability_device.sql',
+  'schemas/traceability-manager/migrations/009_create_so_summary_and_device_summary_views.sql',
   'schemas/finalconfig-manager/migrations/005_add_operator_to_finalconfig_execution_session.sql',
   'schemas/system/migrations/030_create_so_tested_devices_view.sql',
   'schemas/system/migrations/031_sync_all_system_menu_items_and_rbac.sql',
@@ -837,5 +838,27 @@ assert.ok(trace008SchemaSql.includes('config_person'), 'Missing config_person in
 const final005SchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/finalconfig-manager/schema.sql'), 'utf8');
 assert.ok(final005SchemaSql.includes('operator'), 'Missing operator in finalconfig-manager/schema.sql');
 console.log('✓ Traceability migration 008 and FinalConfig migration 005 validated');
+
+// 46. Validate Traceability Migration 009 and schema.sql for v_so_summary, v_device_summary, app_eui
+const trace009Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/traceability-manager/migrations/009_create_so_summary_and_device_summary_views.sql'),
+  'utf8'
+);
+assert.ok(trace009Sql.includes('v_so_summary'), 'Missing v_so_summary in traceability migration 009');
+assert.ok(trace009Sql.includes('v_device_summary'), 'Missing v_device_summary in traceability migration 009');
+assert.ok(trace009Sql.includes('app_eui'), 'Missing app_eui in traceability migration 009');
+assert.ok(trace009Sql.includes('config_distinct'), 'Missing config_distinct in traceability migration 009');
+assert.ok(trace009Sql.includes('remaining_config'), 'Missing remaining_config in traceability migration 009');
+assert.ok(trace009Sql.includes('remaining_test'), 'Missing remaining_test in traceability migration 009');
+assert.ok(trace009Sql.includes('tested'), 'Missing tested in traceability migration 009');
+
+const trace009SchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/traceability-manager/schema.sql'), 'utf8');
+assert.ok(trace009SchemaSql.includes('v_so_summary'), 'Missing v_so_summary in traceability-manager/schema.sql');
+assert.ok(trace009SchemaSql.includes('v_device_summary'), 'Missing v_device_summary in traceability-manager/schema.sql');
+assert.ok(trace009SchemaSql.includes('app_eui'), 'Missing app_eui in traceability-manager/schema.sql');
+assert.ok(trace009SchemaSql.includes('config_distinct'), 'Missing config_distinct in traceability-manager/schema.sql');
+assert.ok(trace009SchemaSql.includes('remaining_config'), 'Missing remaining_config in traceability-manager/schema.sql');
+assert.ok(trace009SchemaSql.includes('remaining_test'), 'Missing remaining_test in traceability-manager/schema.sql');
+console.log('✓ Traceability migration 009 (v_so_summary, v_device_summary, app_eui) validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

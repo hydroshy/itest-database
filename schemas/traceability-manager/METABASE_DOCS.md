@@ -195,3 +195,88 @@ WHERE is_eligible_for_final_config = true
   AND (final_config_status IS NULL OR final_config_status = 'PENDING')
 ORDER BY tested_at DESC;
 ```
+
+---
+
+## 5. View Metabase Mới: `v_so_summary` & `v_device_summary`
+
+### 5.1 View `traceability_manager.v_so_summary` (Theo Dõi Tiến Độ Đơn Hàng SO/WA/Item Code)
+View phân tích tổng hợp tiến độ đơn hàng theo SO, Lệnh sản xuất (WA) và Mã thành phẩm (Item Code). Phục vụ trực tiếp việc tạo Dashboard/Cards trên Metabase theo dõi:
+- Số lượng kế hoạch (`planned_quantity`).
+- Số lượng đã đo kiểm (`tested` / `tested_quantity`), `tested_pass_quantity`, `tested_fail_quantity`.
+- Số lượng còn lại chưa test (`remaining_test`).
+- Số lượng thiết bị cá thể đã nạp cấu hình thành công (`config_distinct`).
+- Số lượng còn lại chưa cấu hình (`remaining_config`).
+- Tiến độ phần trăm đo kiểm (`test_progress_percent`) và cấu hình (`config_progress_percent`).
+- Trạng thái sản xuất (`production_status`: `PENDING`, `TESTING`, `CONFIGURING`, `COMPLETED`).
+
+#### Truy vấn mẫu Metabase:
+```sql
+-- Tracking tiến độ tổng thể các đơn hàng SO
+SELECT
+  so_number,
+  customer_name,
+  wa_number,
+  item_code,
+  planned_quantity,
+  tested,
+  remaining_test,
+  config_distinct,
+  remaining_config,
+  test_progress_percent,
+  config_progress_percent,
+  production_status,
+  last_tested_at,
+  last_configured_at
+FROM traceability_manager.v_so_summary
+ORDER BY so_number DESC, wa_number ASC;
+```
+
+```sql
+-- Rollup theo từng SO (Tổng hợp cho Executive Dashboard)
+SELECT
+  so_number,
+  customer_name,
+  SUM(planned_quantity) AS total_planned,
+  SUM(tested) AS total_tested,
+  SUM(remaining_test) AS total_remaining_test,
+  SUM(config_distinct) AS total_configured,
+  SUM(remaining_config) AS total_remaining_config,
+  ROUND(100.0 * SUM(tested) / NULLIF(SUM(planned_quantity), 0), 2) AS overall_test_yield,
+  ROUND(100.0 * SUM(config_distinct) / NULLIF(SUM(planned_quantity), 0), 2) AS overall_config_yield
+FROM traceability_manager.v_so_summary
+GROUP BY so_number, customer_name
+ORDER BY so_number DESC;
+```
+
+### 5.2 View `traceability_manager.v_device_summary` (Tra Cứu Thiết Bị Với DevEUI, AppKey, AppEUI, Serial)
+View cung cấp bảng dữ liệu chi tiết cho từng thiết bị cá thể phục vụ tìm kiếm, tra cứu bảo hành, quản lý xuất kho và đối soát thiết bị viễn thông:
+- `dev_eui`: Device EUI viễn thông chuẩn hóa (16 ký tự hex).
+- `app_key`: Khóa mã hóa OTAA AppKey (32 ký tự hex) nạp từ Final Config hoặc đo kiểm.
+- `app_eui`: AppEUI / JoinEUI viễn thông.
+- `serial_number`: Số Serial Number phần cứng duy nhất.
+- `so_number`, `wa_number`, `item_code`, `sku`, `hw_version`, `fw_version`.
+- `test_result`, `test_station`, `test_person`, `tested_at`.
+- `config_status`, `config_person`, `configured_at`, `final_config_session_id`.
+
+#### Truy vấn mẫu Metabase:
+```sql
+-- Tra cứu thiết bị theo Serial, DevEUI hoặc AppKey
+SELECT
+  serial_number,
+  dev_eui,
+  app_eui,
+  app_key,
+  item_code,
+  so_number,
+  wa_number,
+  test_result,
+  config_status,
+  config_person,
+  configured_at
+FROM traceability_manager.v_device_summary
+WHERE serial_number = {{search_serial}}
+   OR dev_eui ILIKE {{search_eui}}
+   OR app_key ILIKE {{search_app_key}};
+```
+

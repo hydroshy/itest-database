@@ -37,6 +37,7 @@ SELECT
   d.final_config_session_id,
   COALESCE(d.config_person, d.test_raw_data->'final_config_audit'->>'operator') AS config_person,
   d.configured_at,
+  COALESCE(d.app_eui, d.test_raw_data->>'app_eui', d.test_raw_data->>'appeui', '0000000000000000') AS app_eui,
   COALESCE(d.app_key, d.test_raw_data->>'app_key', d.test_raw_data->'final_config_audit'->>'app_key') AS app_key,
   'traceability_device'::varchar(50) AS source_table
 FROM traceability_manager.traceability_device d
@@ -65,6 +66,7 @@ SELECT
   NULL::uuid AS final_config_session_id,
   NULL::varchar(100) AS config_person,
   NULL::timestamptz AS configured_at,
+  COALESCE(r.app_eui, '0000000000000000') AS app_eui,
   r.app_key,
   'device_test_registrations'::varchar(50) AS source_table
 FROM system_schema.device_test_registrations r
