@@ -526,9 +526,9 @@ SELECT
   u.id AS user_id,
   u.username,
   u.email,
-  u.full_name,
-  u.user_type,
-  u.is_active,
+  u."fullName" AS full_name,
+  u."userType" AS user_type,
+  u."isActive" AS is_active,
   COALESCE(
     JSON_AGG(DISTINCT JSONB_BUILD_OBJECT('id', r.id, 'code', r.code, 'name', r.name))
     FILTER (WHERE r.id IS NOT NULL),
@@ -554,7 +554,7 @@ LEFT JOIN system_schema."role_menu_permissions" rmp
 LEFT JOIN system_schema."menu_items" m ON m.id = rmp."menuItemId" AND m.is_active = true
 LEFT JOIN system_schema."role_permissions" rp ON rp.role_id = r.id
 LEFT JOIN system_schema."permission" p ON p.id = rp.permission_id
-GROUP BY u.id, u.username, u.email, u.full_name, u.user_type, u.is_active;
+GROUP BY u.id, u.username, u.email, u."fullName", u."userType", u."isActive";
 
 DO $$
 BEGIN

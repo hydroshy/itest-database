@@ -802,6 +802,8 @@ const systemMigration031Sql = fs.readFileSync(
 );
 assert.ok(systemMigration031Sql.includes('v_role_menu_access'), 'Missing v_role_menu_access in migration 031');
 assert.ok(systemMigration031Sql.includes('v_user_rbac_overview'), 'Missing v_user_rbac_overview in migration 031');
+assert.ok(systemMigration031Sql.includes('u."fullName"'), 'Migration 031 must use quoted u."fullName" to avoid column not exist error');
+assert.ok(!systemMigration031Sql.includes('u.full_name'), 'Migration 031 must not reference unquoted u.full_name');
 assert.ok(systemMigration031Sql.includes('testing:create-device-testing'), 'Missing testing:create-device-testing in migration 031');
 assert.ok(systemMigration031Sql.includes('device:manage'), 'Missing device:manage in migration 031');
 assert.ok(systemMigration031Sql.includes('device-traceability:final-config'), 'Missing device-traceability:final-config in migration 031');
@@ -809,6 +811,8 @@ assert.ok(systemMigration031Sql.includes("c.relkind = 'v'"), 'Migration 031 must
 const rbacSystemSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
 assert.ok(rbacSystemSchemaSql.includes('v_role_menu_access'), 'Missing v_role_menu_access in system/schema.sql');
 assert.ok(rbacSystemSchemaSql.includes('v_user_rbac_overview'), 'Missing v_user_rbac_overview in system/schema.sql');
+assert.ok(rbacSystemSchemaSql.includes('u."fullName"'), 'system/schema.sql must use quoted u."fullName"');
+assert.ok(!rbacSystemSchemaSql.includes('u.full_name'), 'system/schema.sql must not reference unquoted u.full_name');
 assert.ok(rbacSystemSchemaSql.includes('device:manage'), 'Missing device:manage in system/schema.sql');
 console.log('✓ System migration 031 complete menu items & unified RBAC views validated');
 
