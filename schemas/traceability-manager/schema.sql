@@ -397,13 +397,18 @@ SELECT
   COALESCE(w.planned_quantity, 0)::bigint AS planned_quantity,
   COALESCE(d.tested_quantity, 0)::bigint AS tested,
   COALESCE(d.tested_quantity, 0)::bigint AS tested_quantity,
+  COALESCE(d.tested_quantity, 0)::bigint AS tested_count,
   COALESCE(d.tested_pass_quantity, 0)::bigint AS tested_pass_quantity,
   COALESCE(d.tested_fail_quantity, 0)::bigint AS tested_fail_quantity,
   COALESCE(d.tested_pending_quantity, 0)::bigint AS tested_pending_quantity,
   GREATEST(0, COALESCE(w.planned_quantity, 0) - COALESCE(d.tested_quantity, 0))::bigint AS remaining_test,
+  GREATEST(0, COALESCE(w.planned_quantity, 0) - COALESCE(d.tested_quantity, 0))::bigint AS remaining_test_count,
   COALESCE(d.config_distinct, 0)::bigint AS config_distinct,
+  COALESCE(d.config_distinct, 0)::bigint AS config_distinct_count,
+  COALESCE(d.config_distinct, 0)::bigint AS configured_count,
   COALESCE(d.config_failed_distinct, 0)::bigint AS config_failed_distinct,
   GREATEST(0, COALESCE(w.planned_quantity, 0) - COALESCE(d.config_distinct, 0))::bigint AS remaining_config,
+  GREATEST(0, COALESCE(w.planned_quantity, 0) - COALESCE(d.config_distinct, 0))::bigint AS remaining_config_count,
   ROUND(
     100.0 * COALESCE(d.tested_pass_quantity, 0) / NULLIF(COALESCE(w.planned_quantity, 0), 0),
     2
