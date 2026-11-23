@@ -63,6 +63,7 @@ const requiredFiles = [
   'schemas/system/migrations/027_add_test_batch_id_and_simulation_vars.sql',
   'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql',
   'schemas/traceability-manager/migrations/007_add_test_batch_id_to_traceability_device.sql',
+  'schemas/system/migrations/030_create_so_tested_devices_view.sql',
   'scripts/migrate.js'
 ];
 
@@ -779,5 +780,18 @@ const waAlterIndex = freshFinalConfigSchemaSql.indexOf('ADD COLUMN IF NOT EXISTS
 const waIndex = freshFinalConfigSchemaSql.indexOf('idx_finalconfig_profile_wa');
 assert.ok(waAlterIndex !== -1 && waAlterIndex < waIndex, 'Existing finalconfig_profile table must receive wa_number before creating its index');
 console.log('✓ Finalconfig migration 004 wa_number validated');
+
+// 43. Validate System Migration 030 and schema.sql for v_so_tested_devices view
+const systemMigration030Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/system/migrations/030_create_so_tested_devices_view.sql'),
+  'utf8'
+);
+assert.ok(systemMigration030Sql.includes('v_so_tested_devices'), 'Missing v_so_tested_devices in migration 030');
+assert.ok(systemMigration030Sql.includes('traceability_manager.traceability_device'), 'Missing traceability_device in migration 030');
+assert.ok(systemMigration030Sql.includes('system_schema.device_test_registrations'), 'Missing device_test_registrations in migration 030');
+assert.ok(systemMigration030Sql.includes("c.relkind = 'v'"), 'Migration 030 must verify relkind to avoid 42809 error');
+const soTestedSystemSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
+assert.ok(soTestedSystemSchemaSql.includes('v_so_tested_devices'), 'Missing v_so_tested_devices in system/schema.sql');
+console.log('✓ System migration 030 v_so_tested_devices validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
