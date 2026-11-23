@@ -354,17 +354,44 @@ CREATE INDEX IF NOT EXISTS "idx_role_menu_menu_item_id" ON system_schema."role_m
 INSERT INTO system_schema."menu_items" (
   "id", "title", "description", "route", "icon", "category", "pluginId", "tab", "order", "isActive"
 ) VALUES
-  ('dashboard', 'Dashboard', 'Bảng điều khiển trung tâm và quản trị hệ thống', '/dashboard', 'DataBoard', 'system', NULL, NULL, 1, true),
+  ('dashboard', 'Bảng điều khiển', 'Tổng quan hệ thống, trạng thái dịch vụ và phân quyền quản trị menu', '/dashboard', 'Odometer', 'system', NULL, NULL, 1, true),
   ('final-config:tool', 'Final Config Tool', 'Nạp cấu hình thiết bị tự động qua Web Serial và kiểm thử 4 công đoạn', '/plugins/final-config?tab=tool', 'Cpu', 'plugin', 'final-config', 'tool', 2, true),
   ('final-config:manager', 'Final Config Manager', 'Quản lý, tìm kiếm và tra cứu danh sách profile Final Config', '/plugins/final-config?tab=manager', 'Document', 'plugin', 'final-config', 'manager', 3, true),
   ('final-config:create', 'Tạo Final Config', 'Tạo mới cấu hình thiết bị từ Memmap Payload template', '/plugins/final-config?tab=create', 'CirclePlus', 'plugin', 'final-config', 'create', 4, true),
-  ('device-traceability:so', 'Sales Orders & Work Authorizations', 'Quản lý cây đơn hàng SO, chỉ thị xuất kho WA và danh sách thiết bị', '/plugins/device-traceability?tab=so', 'List', 'plugin', 'device-traceability', 'so', 5, true),
-  ('device-traceability:devices', 'Device Traceability List', 'Tra cứu dòng đời thiết bị, lịch sử test và trạng thái final config', '/plugins/device-traceability?tab=devices', 'Odometer', 'plugin', 'device-traceability', 'devices', 6, true),
-  ('device-traceability:config', 'Tra Cứu Cấu Hình Cuối', 'Tra cứu và giám sát cấu hình cuối cùng của thiết bị', '/plugins/device-traceability?tab=config', 'DocumentChecked', 'plugin', 'device-traceability', 'config', 7, true),
-  ('memmap-payload:manager', 'MEMMAP PAYLOAD', 'Quản lý bản đồ bộ nhớ (Memmap) và tải lên bảng thanh ghi thiết bị', '/plugins/memmap-payload', 'Collection', 'plugin', 'memmap-payload', 'manager', 8, true),
-  ('lorawan-chirpstack:integration', 'LoRaWAN ChirpStack Integration', 'Đồng bộ thiết bị và cấu hình kết nối ChirpStack v4', '/plugins/lorawan-chirpstack', 'Connection', 'plugin', 'lorawan-chirpstack', 'integration', 9, true),
-  ('testing:gateway', 'Gateway Testing', 'Đo kiểm Gateway, kiểm tra RF/RSSI/SNR, gói tin và liên kết ChirpStack', '/plugins/testing?tab=gateway', 'Odometer', 'plugin', 'testing', 'gateway', 11, true),
-  ('device:devices', 'Thiết Bị (Devices)', 'Quản lý thông tin thiết bị, serial number, network ID và truy vết nguồn gốc', '/plugins/device?tab=devices', 'Cpu', 'plugin', 'device', 'devices', 12, true)
+  ('device:manage', 'Thiết Bị (Devices)', 'Quản lý danh sách thiết bị IoT, liên kết dữ liệu Traceability (SO/WA/Item Code) và trạng thái hoạt động độc lập', '/plugins/device', 'Cpu', 'plugin', 'device', 'manage', 5, true),
+  ('device-traceability:so', 'Sales Orders & Work Authorizations', 'Quản lý cây đơn hàng SO, chỉ thị xuất kho WA và danh sách thiết bị', '/plugins/device-traceability?tab=so', 'List', 'plugin', 'device-traceability', 'so', 6, true),
+  ('device-traceability:devices', 'Device Traceability List', 'Tra cứu dòng đời thiết bị, lịch sử test và trạng thái hoàn thành', '/plugins/device-traceability?tab=devices', 'Search', 'plugin', 'device-traceability', 'devices', 7, true),
+  ('device-traceability:final-config', 'Final Config Devices List', 'Tra cứu danh sách thiết bị đã cấu hình final config và audit log', '/plugins/device-traceability?tab=final-config', 'Checked', 'plugin', 'device-traceability', 'final-config', 8, true),
+  ('memmap-payload:main', 'MEMMAP PAYLOAD', 'Quản lý bản đồ bộ nhớ (Memmap) và tải lên bảng thanh ghi thiết bị', '/plugins/memmap-payload', 'Layers', 'plugin', 'memmap-manager', 'main', 9, true),
+  ('dis-manager:main', 'DIS Odoo Integration', 'Quản trị kết nối DIS API (Odoo), kiểm thử API Sandbox và đồng bộ Sales Orders vào iTest', '/plugins/dis-manager', 'Connection', 'plugin', 'dis-manager', 'main', 10, true),
+  ('decoder:scripts', 'DECODER', 'Quản lý kịch bản giải mã Uplink payload thiết bị IoT, liên kết Item Code và FW Code', '/plugins/decoder?tab=list', 'Document', 'plugin', 'decoder', 'list', 11, true),
+  ('lorawan-chirpstack:integration', 'CHIRPSTACK', 'Đồng bộ Gateways, Applications và Live Frames từ Network Server ChirpStack', '/plugins/lorawan-chirpstack?tab=overview', 'Connection', 'plugin', 'lorawan-chirpstack', 'overview', 12, true),
+  ('lorawan-chirpstack:tenants', 'LoRaWAN Tenants', 'Quản lý tenant ChirpStack', '/plugins/lorawan-chirpstack?tab=tenants', 'User', 'plugin', 'lorawan-chirpstack', 'tenants', 13, true),
+  ('lorawan-chirpstack:gateways', 'LoRaWAN Gateways', 'Quản lý gateway LoRaWAN', '/plugins/lorawan-chirpstack?tab=gateways', 'Connection', 'plugin', 'lorawan-chirpstack', 'gateways', 14, true),
+  ('lorawan-chirpstack:devices', 'LoRaWAN Devices', 'Quản lý thiết bị LoRaWAN', '/plugins/lorawan-chirpstack?tab=devices', 'Cpu', 'plugin', 'lorawan-chirpstack', 'devices', 15, true),
+  ('lorawan-chirpstack:telemetry', 'LoRaWAN Telemetry', 'Theo dõi uplink telemetry LoRaWAN', '/plugins/lorawan-chirpstack?tab=telemetry', 'DataLine', 'plugin', 'lorawan-chirpstack', 'telemetry', 16, true),
+  ('testing:device-payload', 'DEVICE PAYLOAD', 'Giám sát trực tiếp dữ liệu thô và payload đã giải mã từ trạm testing', '/plugins/testing?tab=device-payload', 'DataLine', 'plugin', 'testing', 'device-payload', 17, true),
+  ('testing:create-device-testing', 'CREATE DEVICE TESTING', 'Tạo mới phiên kiểm thử thiết bị (DUT), gắn kịch bản Flow và kích hoạt Auto Check', '/plugins/testing?tab=create-device-testing', 'CirclePlus', 'plugin', 'testing', 'create-device-testing', 18, true),
+  ('testing:list-device-testing', 'LIST DEVICE TESTING', 'Danh sách các thiết bị kiểm thử được tạo ra bởi Testing Suite', '/plugins/testing?tab=list-device-testing', 'List', 'plugin', 'testing', 'list-device-testing', 19, true),
+  ('testing:create-preconfig', 'CREATE PRECONFIG', 'Tạo cấu hình trước (Preconfig) cho thiết bị từ MEMMAP theo SO, WA, Item Code', '/plugins/testing?tab=create-preconfig', 'CirclePlus', 'plugin', 'testing', 'create-preconfig', 20, true),
+  ('testing:list-preconfig', 'LIST PRECONFIG', 'Danh sách và tra cứu các profile Preconfig thiết bị đã tạo', '/plugins/testing?tab=list-preconfig', 'List', 'plugin', 'testing', 'list-preconfig', 21, true),
+  ('testing:list-test-batch', 'LIST TEST BATCH', 'Danh sách và lịch sử các Test Batch đã thiết lập trong hệ thống', '/plugins/testing?tab=list-test-batch', 'ListFilter', 'plugin', 'testing', 'list-test-batch', 22, true),
+  ('testing:list-flow-simulation', 'LIST FLOW SIMULATION', 'Quản lý danh sách kịch bản mô phỏng kiểm thử (Simulation Flow Templates)', '/plugins/testing?tab=list-flow-simulation', 'Cpu', 'plugin', 'testing', 'list-flow-simulation', 23, true),
+  ('testing:list-device-simulation', 'LIST DEVICE SIMULATION', 'Quản lý danh sách thiết bị simulation độc lập', '/plugins/testing?tab=list-device-simulation', 'Radio', 'plugin', 'testing', 'list-device-simulation', 24, true),
+  ('testing:so-test-batch', 'SO TEST BATCH', 'Quản lý liên kết giữa Sale Order (SO) và Test Batch', '/plugins/testing?tab=so-test-batch', 'Layers', 'plugin', 'testing', 'so-test-batch', 25, true),
+  ('testing:create-test-batch', 'CREATE TEST BATCH', 'Khởi tạo cấu hình Test Batch với ITEM-CODE, LONG_FW, gán Simulation Flow tự động', '/plugins/testing?tab=create-test-batch', 'FolderPlus', 'plugin', 'testing', 'create-test-batch', 26, true),
+  ('testing:device-simulation', 'CREATE SIMULATION FLOW', 'Tạo kịch bản mô phỏng kiểm thử kết hợp Auto Check: Downlink, Delay, Cửa sổ đo', '/plugins/testing?tab=device-simulation', 'Cpu', 'plugin', 'testing', 'device-simulation', 27, true),
+  -- Backward-compatibility & Alias Items
+  ('device-traceability:config', 'Tra Cứu Cấu Hình Cuối', 'Tra cứu và giám sát cấu hình cuối cùng của thiết bị', '/plugins/device-traceability?tab=config', 'DocumentChecked', 'plugin', 'device-traceability', 'config', 28, true),
+  ('memmap-payload:manager', 'MEMMAP PAYLOAD (Manager)', 'Quản lý bản đồ bộ nhớ (Memmap) và tải lên bảng thanh ghi thiết bị', '/plugins/memmap-manager?tab=manager', 'Files', 'plugin', 'memmap-manager', 'manager', 29, true),
+  ('device:devices', 'Thiết Bị (Legacy)', 'Quản lý thông tin thiết bị, serial number, network ID và truy vết nguồn gốc', '/plugins/device?tab=devices', 'Cpu', 'plugin', 'device', 'devices', 30, true),
+  ('testing:gateway', 'Gateway Testing', 'Đo kiểm Gateway, kiểm tra RF/RSSI/SNR, gói tin và liên kết ChirpStack', '/plugins/testing?tab=gateway', 'Odometer', 'plugin', 'testing', 'gateway', 31, true),
+  ('testing:gateway-sessions', 'Gateway Sessions', 'Tra cứu các phiên đo kiểm Gateway và dữ liệu tín hiệu RF', '/plugins/testing?tab=gateway-sessions', 'Connection', 'plugin', 'testing', 'gateway-sessions', 32, true),
+  ('testing:simulation-devices', 'Simulation Devices List', 'Quản lý thiết bị mô phỏng kiểm thử độc lập', '/plugins/testing?tab=simulation-devices', 'Radio', 'plugin', 'testing', 'simulation-devices', 33, true),
+  ('testing:device-auto-check', 'Device Auto Check', 'Cấu hình ngưỡng kiểm tra tự động cho kịch bản đo', '/plugins/testing?tab=device-auto-check', 'Checked', 'plugin', 'testing', 'device-auto-check', 34, true),
+  ('testing:packets', 'Live Packets Monitor', 'Theo dõi luồng gói tin thô và RF metrics theo thời gian thực', '/plugins/testing?tab=packets', 'DataLine', 'plugin', 'testing', 'packets', 35, true),
+  ('so-test-batch:main', 'SO Test Batch Manager', 'Liên kết đơn hàng SO và lô đo kiểm Test Batch', '/plugins/so-test-batch', 'Layers', 'plugin', 'testing', 'so-test-batch', 36, true),
+  ('testing:test-batch', 'Device Test Batch', 'Thiết lập và giám sát tiến độ đo kiểm theo lô thiết bị', '/plugins/testing?tab=test-batch', 'ListFilter', 'plugin', 'testing', 'test-batch', 37, true)
 ON CONFLICT ("id") DO UPDATE SET
   "title" = EXCLUDED."title",
   "description" = EXCLUDED."description",
@@ -381,7 +408,7 @@ INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuIt
 SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
-WHERE r."code" IN ('SUPER_ADMIN', 'admin')
+WHERE r."code" IN ('SUPER_ADMIN', 'ADMIN', 'admin')
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
@@ -389,23 +416,50 @@ SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
 WHERE r."code" IN ('SUB_ADMIN', 'sub_admin')
-  AND m."id" IN ('dashboard', 'final-config:tool', 'final-config:manager', 'device-traceability:so', 'device-traceability:devices', 'device-traceability:config', 'memmap-payload:manager', 'testing:gateway', 'device:devices')
+  AND m."id" NOT IN ('dashboard')
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
 SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
-WHERE r."code" IN ('OPERATOR', 'operator')
-  AND m."id" IN ('final-config:tool', 'device-traceability:devices', 'lorawan-chirpstack:integration', 'testing:gateway', 'device:devices')
+WHERE r."code" IN ('OPERATOR', 'operator', 'TESTER', 'tester', 'QA_ENGINEER', 'qa_engineer')
+  AND m."id" IN (
+    'dashboard',
+    'final-config:tool',
+    'final-config:manager',
+    'device:manage',
+    'device-traceability:so',
+    'device-traceability:devices',
+    'device-traceability:final-config',
+    'decoder:scripts',
+    'lorawan-chirpstack:telemetry',
+    'testing:device-payload',
+    'testing:create-device-testing',
+    'testing:list-device-testing',
+    'testing:create-preconfig',
+    'testing:list-preconfig',
+    'testing:list-test-batch',
+    'testing:list-flow-simulation',
+    'testing:list-device-simulation',
+    'testing:so-test-batch',
+    'testing:create-test-batch',
+    'testing:device-simulation',
+    'testing:gateway-sessions',
+    'testing:simulation-devices',
+    'testing:device-auto-check',
+    'testing:packets',
+    'so-test-batch:main',
+    'testing:test-batch'
+  )
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 INSERT INTO system_schema."role_menu_permissions" ("roleId", "roleCode", "menuItemId")
 SELECT r."id", r."code", m."id"
 FROM system_schema."roles" r
 CROSS JOIN system_schema."menu_items" m
-WHERE r."code" IN ('END_USER', 'user')
-  AND m."id" IN ('final-config:tool')
+WHERE r."code" IN ('END_USER', 'user', 'USER')
+  AND m."id" IN ('dashboard', 'final-config:tool')
 ON CONFLICT ("roleId", "menuItemId") DO NOTHING;
 
 -- 6. Compatibility Views for cross-schema access (public <-> system_schema)
@@ -424,6 +478,107 @@ SELECT * FROM system_schema."menu_items";
 DROP VIEW IF EXISTS public."role_menu_permissions" CASCADE;
 CREATE OR REPLACE VIEW public."role_menu_permissions" AS
 SELECT * FROM system_schema."role_menu_permissions";
+
+-- Unified RBAC Views Linking Menu Views and Permissions
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'system_schema' AND c.relname = 'v_role_menu_access' AND c.relkind = 'v'
+  ) THEN
+    DROP VIEW system_schema.v_role_menu_access CASCADE;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'system_schema' AND c.relname = 'v_user_rbac_overview' AND c.relkind = 'v'
+  ) THEN
+    DROP VIEW system_schema.v_user_rbac_overview CASCADE;
+  END IF;
+END $$;
+
+CREATE OR REPLACE VIEW system_schema.v_role_menu_access AS
+SELECT
+  r.id AS role_id,
+  r.code AS role_code,
+  r.name AS role_name,
+  m.id AS menu_item_id,
+  m.title AS menu_title,
+  m.description AS menu_description,
+  m.route AS menu_route,
+  m.icon AS menu_icon,
+  m.category AS menu_category,
+  m.plugin_id AS menu_plugin_id,
+  m.tab AS menu_tab,
+  m.display_order AS menu_order,
+  m.is_active AS menu_is_active,
+  CASE WHEN rmp.id IS NOT NULL THEN true ELSE false END AS is_granted,
+  rmp.created_at AS granted_at
+FROM system_schema."roles" r
+CROSS JOIN system_schema."menu_items" m
+LEFT JOIN system_schema."role_menu_permissions" rmp
+  ON (rmp."roleId" = r.id OR UPPER(rmp."roleCode") = UPPER(r.code))
+  AND rmp."menuItemId" = m.id;
+
+CREATE OR REPLACE VIEW system_schema.v_user_rbac_overview AS
+SELECT
+  u.id AS user_id,
+  u.username,
+  u.email,
+  u.full_name,
+  u.user_type,
+  u.is_active,
+  COALESCE(
+    JSON_AGG(DISTINCT JSONB_BUILD_OBJECT('id', r.id, 'code', r.code, 'name', r.name))
+    FILTER (WHERE r.id IS NOT NULL),
+    '[]'::json
+  ) AS roles,
+  COALESCE(
+    JSON_AGG(DISTINCT m.id)
+    FILTER (WHERE m.id IS NOT NULL),
+    '[]'::json
+  ) AS assigned_menu_ids,
+  COALESCE(
+    JSON_AGG(DISTINCT p.name)
+    FILTER (WHERE p.name IS NOT NULL),
+    '[]'::json
+  ) AS assigned_permissions,
+  COUNT(DISTINCT m.id) AS total_accessible_menus,
+  COUNT(DISTINCT p.id) AS total_permissions
+FROM system_schema."users" u
+LEFT JOIN system_schema."user_role" ur ON ur.user_id = u.id
+LEFT JOIN system_schema."roles" r ON r.id = ur.role_id
+LEFT JOIN system_schema."role_menu_permissions" rmp
+  ON (rmp."roleId" = r.id OR UPPER(rmp."roleCode") = UPPER(r.code))
+LEFT JOIN system_schema."menu_items" m ON m.id = rmp."menuItemId" AND m.is_active = true
+LEFT JOIN system_schema."role_permissions" rp ON rp.role_id = r.id
+LEFT JOIN system_schema."permission" p ON p.id = rp.permission_id
+GROUP BY u.id, u.username, u.email, u.full_name, u.user_type, u.is_active;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relname = 'v_role_menu_access' AND c.relkind = 'v'
+  ) THEN
+    DROP VIEW public.v_role_menu_access CASCADE;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relname = 'v_user_rbac_overview' AND c.relkind = 'v'
+  ) THEN
+    DROP VIEW public.v_user_rbac_overview CASCADE;
+  END IF;
+END $$;
+
+CREATE OR REPLACE VIEW public.v_role_menu_access AS
+SELECT * FROM system_schema.v_role_menu_access;
+
+CREATE OR REPLACE VIEW public.v_user_rbac_overview AS
+SELECT * FROM system_schema.v_user_rbac_overview;
 
 -- 7. Devices & Device Packets for Testing & Device Management
 CREATE TABLE IF NOT EXISTS system_schema."devices" (

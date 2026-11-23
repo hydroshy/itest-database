@@ -64,6 +64,7 @@ const requiredFiles = [
   'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql',
   'schemas/traceability-manager/migrations/007_add_test_batch_id_to_traceability_device.sql',
   'schemas/system/migrations/030_create_so_tested_devices_view.sql',
+  'schemas/system/migrations/031_sync_all_system_menu_items_and_rbac.sql',
   'scripts/migrate.js'
 ];
 
@@ -793,5 +794,22 @@ assert.ok(systemMigration030Sql.includes("c.relkind = 'v'"), 'Migration 030 must
 const soTestedSystemSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
 assert.ok(soTestedSystemSchemaSql.includes('v_so_tested_devices'), 'Missing v_so_tested_devices in system/schema.sql');
 console.log('✓ System migration 030 v_so_tested_devices validated');
+
+// 44. Validate System Migration 031 and schema.sql for complete menu items & unified RBAC views
+const systemMigration031Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/system/migrations/031_sync_all_system_menu_items_and_rbac.sql'),
+  'utf8'
+);
+assert.ok(systemMigration031Sql.includes('v_role_menu_access'), 'Missing v_role_menu_access in migration 031');
+assert.ok(systemMigration031Sql.includes('v_user_rbac_overview'), 'Missing v_user_rbac_overview in migration 031');
+assert.ok(systemMigration031Sql.includes('testing:create-device-testing'), 'Missing testing:create-device-testing in migration 031');
+assert.ok(systemMigration031Sql.includes('device:manage'), 'Missing device:manage in migration 031');
+assert.ok(systemMigration031Sql.includes('device-traceability:final-config'), 'Missing device-traceability:final-config in migration 031');
+assert.ok(systemMigration031Sql.includes("c.relkind = 'v'"), 'Migration 031 must verify relkind to avoid 42809 error');
+const rbacSystemSchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/system/schema.sql'), 'utf8');
+assert.ok(rbacSystemSchemaSql.includes('v_role_menu_access'), 'Missing v_role_menu_access in system/schema.sql');
+assert.ok(rbacSystemSchemaSql.includes('v_user_rbac_overview'), 'Missing v_user_rbac_overview in system/schema.sql');
+assert.ok(rbacSystemSchemaSql.includes('device:manage'), 'Missing device:manage in system/schema.sql');
+console.log('✓ System migration 031 complete menu items & unified RBAC views validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
