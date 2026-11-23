@@ -99,11 +99,15 @@ CREATE TABLE IF NOT EXISTS finalconfig_manager."finalconfig_execution_session" (
   "failed_steps" INTEGER NOT NULL DEFAULT 0,
   "started_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "completed_at" TIMESTAMPTZ,
+  "operator" VARCHAR(100),
   "error_message" TEXT,
   "metadata" JSONB DEFAULT '{}'::jsonb,
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE finalconfig_manager."finalconfig_execution_session"
+  ADD COLUMN IF NOT EXISTS "operator" VARCHAR(100);
 
 DROP TRIGGER IF EXISTS trg_finalconfig_execution_session_updated_at ON finalconfig_manager."finalconfig_execution_session";
 CREATE TRIGGER trg_finalconfig_execution_session_updated_at

@@ -1743,7 +1743,9 @@ SELECT
   d.tested_at,
   d.config_status,
   d.final_config_session_id,
-  COALESCE(d.test_raw_data->>'app_key', d.test_raw_data->>'appKey') AS app_key,
+  COALESCE(d.config_person, d.test_raw_data->'final_config_audit'->>'operator') AS config_person,
+  d.configured_at,
+  COALESCE(d.app_key, d.test_raw_data->>'app_key', d.test_raw_data->'final_config_audit'->>'app_key') AS app_key,
   'traceability_device'::varchar(50) AS source_table
 FROM traceability_manager.traceability_device d
 JOIN traceability_manager.traceability_so so ON d.so_id = so.id
@@ -1769,6 +1771,8 @@ SELECT
   r.created_at AS tested_at,
   'PENDING'::varchar(20) AS config_status,
   NULL::uuid AS final_config_session_id,
+  NULL::varchar(100) AS config_person,
+  NULL::timestamptz AS configured_at,
   r.app_key,
   'device_test_registrations'::varchar(50) AS source_table
 FROM system_schema.device_test_registrations r

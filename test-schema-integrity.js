@@ -63,6 +63,8 @@ const requiredFiles = [
   'schemas/system/migrations/027_add_test_batch_id_and_simulation_vars.sql',
   'schemas/traceability-manager/migrations/006_enhance_testing_devices_views_and_metrics.sql',
   'schemas/traceability-manager/migrations/007_add_test_batch_id_to_traceability_device.sql',
+  'schemas/traceability-manager/migrations/008_add_app_key_and_config_person_to_traceability_device.sql',
+  'schemas/finalconfig-manager/migrations/005_add_operator_to_finalconfig_execution_session.sql',
   'schemas/system/migrations/030_create_so_tested_devices_view.sql',
   'schemas/system/migrations/031_sync_all_system_menu_items_and_rbac.sql',
   'scripts/migrate.js'
@@ -815,5 +817,25 @@ assert.ok(rbacSystemSchemaSql.includes('u."fullName"'), 'system/schema.sql must 
 assert.ok(!rbacSystemSchemaSql.includes('u.full_name'), 'system/schema.sql must not reference unquoted u.full_name');
 assert.ok(rbacSystemSchemaSql.includes('device:manage'), 'Missing device:manage in system/schema.sql');
 console.log('✓ System migration 031 complete menu items & unified RBAC views validated');
+
+// 45. Validate Traceability Migration 008 and FinalConfig Migration 005 for app_key, config_person, operator
+const trace008Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/traceability-manager/migrations/008_add_app_key_and_config_person_to_traceability_device.sql'),
+  'utf8'
+);
+assert.ok(trace008Sql.includes('app_key'), 'Missing app_key in traceability migration 008');
+assert.ok(trace008Sql.includes('config_person'), 'Missing config_person in traceability migration 008');
+assert.ok(trace008Sql.includes('configured_at'), 'Missing configured_at in traceability migration 008');
+const final005Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/finalconfig-manager/migrations/005_add_operator_to_finalconfig_execution_session.sql'),
+  'utf8'
+);
+assert.ok(final005Sql.includes('operator'), 'Missing operator in finalconfig migration 005');
+const trace008SchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/traceability-manager/schema.sql'), 'utf8');
+assert.ok(trace008SchemaSql.includes('app_key'), 'Missing app_key in traceability-manager/schema.sql');
+assert.ok(trace008SchemaSql.includes('config_person'), 'Missing config_person in traceability-manager/schema.sql');
+const final005SchemaSql = fs.readFileSync(path.join(__dirname, 'schemas/finalconfig-manager/schema.sql'), 'utf8');
+assert.ok(final005SchemaSql.includes('operator'), 'Missing operator in finalconfig-manager/schema.sql');
+console.log('✓ Traceability migration 008 and FinalConfig migration 005 validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

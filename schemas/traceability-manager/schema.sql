@@ -101,6 +101,9 @@ CREATE TABLE IF NOT EXISTS traceability_manager."traceability_device" (
   "test_raw_data" JSONB NOT NULL DEFAULT '{}'::jsonb,
   "final_config_session_id" UUID,
   "config_status" VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  "app_key" VARCHAR(64),
+  "config_person" VARCHAR(100),
+  "configured_at" TIMESTAMPTZ,
   "status" VARCHAR(30) NOT NULL DEFAULT 'TESTED',
   "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -108,7 +111,10 @@ CREATE TABLE IF NOT EXISTS traceability_manager."traceability_device" (
 
 -- CREATE TABLE IF NOT EXISTS does not add columns to existing installations.
 ALTER TABLE traceability_manager."traceability_device"
-  ADD COLUMN IF NOT EXISTS "test_batch_id" UUID;
+  ADD COLUMN IF NOT EXISTS "test_batch_id" UUID,
+  ADD COLUMN IF NOT EXISTS "app_key" VARCHAR(64),
+  ADD COLUMN IF NOT EXISTS "config_person" VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS "configured_at" TIMESTAMPTZ;
 
 COMMENT ON TABLE traceability_manager."traceability_device" IS 'Quản lý từng thiết bị cá thể, liên kết SO/WA và dữ liệu kiểm thử phần cứng';
 COMMENT ON COLUMN traceability_manager."traceability_device"."id" IS 'Khóa chính UUID duy nhất';
@@ -166,6 +172,7 @@ SELECT
   d.serial_number,
   d.device_key,
   d.dev_eui,
+  COALESCE(d.app_key, d.test_raw_data->>'app_key', d.test_raw_data->'final_config_audit'->>'app_key') AS app_key,
   COALESCE(d.item_code, wa.item_code) AS item_code,
   d.sku,
   d.hw_version,
@@ -200,6 +207,8 @@ SELECT
   wa.wa_number,
   d.final_config_session_id,
   d.config_status AS final_config_status,
+  COALESCE(d.config_person, fcs.operator, d.test_raw_data->'final_config_audit'->>'operator') AS config_person,
+  COALESCE(d.configured_at, fcs.completed_at, (d.test_raw_data->'final_config_audit'->>'saved_at')::timestamptz) AS configured_at,
   fcs.status AS final_config_session_status,
   fcs.current_step AS final_config_current_step,
   fcs.total_steps AS final_config_total_steps,
@@ -217,7 +226,7 @@ JOIN traceability_manager.traceability_so so ON d.so_id = so.id
 LEFT JOIN traceability_manager.traceability_wa wa ON d.wa_id = wa.id
 LEFT JOIN finalconfig_manager.finalconfig_execution_session fcs ON d.final_config_session_id = fcs.id;
 
-COMMENT ON VIEW traceability_manager.v_device_traceability_lifecycle IS 'Metabase Analytical View: Aggregates full device lifecycle spanning Sale Order (SO), Work Authorization (WA), Hardware Test CSV Results, and Final Configuration Session.';
+COMMENT ON VIEW traceability_manager.v_device_traceability_lifecycle IS 'Metabase Analytical View: Aggregates full device lifecycle spanning Sale Order (SO), Work Authorization (WA), Hardware Test CSV Results, AppKey, and Final Configuration Session with Operator.';
 
 -- View: v_device_test_metrics_report (Traceability Testing Metrics & Packets Timeline)
 DROP VIEW IF EXISTS traceability_manager.v_device_test_metrics_report CASCADE;
@@ -226,6 +235,7 @@ SELECT
   d.id AS device_id,
   d.serial_number,
   d.dev_eui,
+  COALESCE(d.app_key, d.test_raw_data->>'app_key', d.test_raw_data->'final_config_audit'->>'app_key') AS app_key,
   so.so_number,
   wa.wa_number,
   COALESCE(d.item_code, wa.item_code) AS item_code,
@@ -236,6 +246,10 @@ SELECT
   d.tested_at AS time_test,
   d.test_station,
   d.test_id,
+  d.final_config_session_id,
+  d.config_status,
+  COALESCE(d.config_person, d.test_raw_data->'final_config_audit'->>'operator') AS config_person,
+  d.configured_at,
   COALESCE(
     (d.test_raw_data->'comparison'->>'avg_cycle')::numeric,
     (d.test_raw_data->>'avg_cycle')::numeric,
