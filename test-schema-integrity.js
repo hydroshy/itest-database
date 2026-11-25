@@ -65,6 +65,7 @@ const requiredFiles = [
   'schemas/traceability-manager/migrations/007_add_test_batch_id_to_traceability_device.sql',
   'schemas/traceability-manager/migrations/008_add_app_key_and_config_person_to_traceability_device.sql',
   'schemas/traceability-manager/migrations/009_create_so_summary_and_device_summary_views.sql',
+  'schemas/traceability-manager/migrations/010_allow_multiple_item_codes_per_wa.sql',
   'schemas/finalconfig-manager/migrations/005_add_operator_to_finalconfig_execution_session.sql',
   'schemas/system/migrations/030_create_so_tested_devices_view.sql',
   'schemas/system/migrations/031_sync_all_system_menu_items_and_rbac.sql',
@@ -860,5 +861,15 @@ assert.ok(trace009SchemaSql.includes('config_distinct'), 'Missing config_distinc
 assert.ok(trace009SchemaSql.includes('remaining_config'), 'Missing remaining_config in traceability-manager/schema.sql');
 assert.ok(trace009SchemaSql.includes('remaining_test'), 'Missing remaining_test in traceability-manager/schema.sql');
 console.log('✓ Traceability migration 009 (v_so_summary, v_device_summary, app_eui) validated');
+
+// 47. Validate Traceability Migration 010 (allow multiple item codes per WA)
+const trace010Sql = fs.readFileSync(
+  path.join(__dirname, 'schemas/traceability-manager/migrations/010_allow_multiple_item_codes_per_wa.sql'),
+  'utf8'
+);
+assert.ok(trace010Sql.includes('traceability_wa_wa_number_key'), 'Missing constraint drop in traceability migration 010');
+assert.ok(trace010Sql.includes('uq_traceability_wa_so_wa_item'), 'Missing uq_traceability_wa_so_wa_item in migration 010');
+assert.ok(trace009SchemaSql.includes('uq_traceability_wa_so_wa_item'), 'Missing uq_traceability_wa_so_wa_item in traceability schema.sql');
+console.log('✓ Traceability migration 010 (multi-item_code per WA, composite unique index) validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');

@@ -57,7 +57,7 @@ EXECUTE FUNCTION traceability_manager.set_current_timestamp_updated_at();
 CREATE TABLE IF NOT EXISTS traceability_manager."traceability_wa" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "so_id" UUID NOT NULL REFERENCES traceability_manager."traceability_so"("id") ON DELETE CASCADE,
-  "wa_number" VARCHAR(50) NOT NULL UNIQUE,
+  "wa_number" VARCHAR(50) NOT NULL,
   "item_code" VARCHAR(100),
   "planned_quantity" INTEGER NOT NULL DEFAULT 0,
   "notes" TEXT,
@@ -152,6 +152,22 @@ CREATE INDEX IF NOT EXISTS idx_traceability_so_number ON traceability_manager."t
 CREATE INDEX IF NOT EXISTS idx_traceability_wa_so_id ON traceability_manager."traceability_wa" ("so_id");
 CREATE INDEX IF NOT EXISTS idx_traceability_wa_number ON traceability_manager."traceability_wa" ("wa_number");
 CREATE INDEX IF NOT EXISTS idx_traceability_wa_item_code ON traceability_manager."traceability_wa" ("item_code");
+
+-- Drop obsolete single-column unique constraint on wa_number to support multiple distinct ITEM_CODEs per WA
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE table_schema = 'traceability_manager' AND table_name = 'traceability_wa'
+      AND constraint_name = 'traceability_wa_wa_number_key'
+  ) THEN
+    ALTER TABLE traceability_manager."traceability_wa" DROP CONSTRAINT "traceability_wa_wa_number_key";
+  END IF;
+END $$;
+
+-- Composite unique index allowing multiple ITEM_CODEs under the same WA
+CREATE UNIQUE INDEX IF NOT EXISTS uq_traceability_wa_so_wa_item
+  ON traceability_manager."traceability_wa" ("so_id", "wa_number", COALESCE("item_code", ''));
 CREATE INDEX IF NOT EXISTS idx_traceability_device_so_id ON traceability_manager."traceability_device" ("so_id");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_wa_id ON traceability_manager."traceability_device" ("wa_id");
 CREATE INDEX IF NOT EXISTS idx_traceability_device_serial ON traceability_manager."traceability_device" ("serial_number");

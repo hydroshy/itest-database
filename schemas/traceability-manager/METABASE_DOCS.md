@@ -87,7 +87,7 @@ Module Traceability được thiết kế trong schema riêng biệt `traceabili
 |---|---|---|---|
 | `id` | `UUID` | PK, Default gen_random_uuid() | Định danh duy nhất của Lệnh Sản Xuất. |
 | `so_id` | `UUID` | NOT NULL, FK -> `traceability_so(id)` | Khóa ngoại tới SO tương ứng (CASCADE DELETE). |
-| `wa_number` | `VARCHAR(50)` | NOT NULL, UNIQUE, Indexed | Cú pháp chuẩn `WA/xxxx/xxxxx` (VD: `WA/2026/00412`). |
+| `wa_number` | `VARCHAR(50)` | NOT NULL, Indexed | Cú pháp chuẩn `WA/xxxx/xxxxx` (VD: `WA/2026/00412`). Ràng buộc duy nhất phức hợp `(so_id, wa_number, item_code)` cho phép quản lý nhiều ITEM_CODE độc lập trong cùng một lệnh WA. |
 | `item_code` | `VARCHAR(100)` | Nullable, Indexed | Mã chủng loại thành phẩm ERP (VD: `WSLRW-C-RS485-01`). |
 | `planned_quantity` | `INTEGER` | NOT NULL, Default 0 | Số lượng kế hoạch của lệnh sản xuất. |
 | `notes` | `TEXT` | Nullable | Ghi chú kỹ thuật của lệnh sản xuất. |
