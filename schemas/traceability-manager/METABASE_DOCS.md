@@ -253,7 +253,7 @@ ORDER BY so_number DESC;
 View cung cấp bảng dữ liệu chi tiết cho từng thiết bị cá thể phục vụ tìm kiếm, tra cứu bảo hành, quản lý xuất kho và đối soát thiết bị viễn thông:
 - `dev_eui`: Device EUI viễn thông chuẩn hóa (16 ký tự hex).
 - `app_key`: Khóa mã hóa OTAA AppKey (32 ký tự hex) nạp từ Final Config hoặc đo kiểm.
-- `app_eui`: AppEUI / JoinEUI đọc từ thanh ghi LoRaWAN 31; nếu chưa lưu trên thiết bị, lấy từ lần đăng ký kiểm thử gần nhất cùng serial. Không có giá trị thì `NULL`, không điền giả toàn số 0.
+- `app_eui`: AppEUI / JoinEUI lấy từ giá trị readback của Final Config (register 31 / audit readback); nếu chưa final config, fallback sang thiết bị hoặc lần đăng ký test gần nhất. Không có giá trị thì `NULL`, không điền giả toàn số 0.
 - `serial_number`: Số Serial Number phần cứng duy nhất.
 - `so_number`, `wa_number`, `item_code`, `hw_version`, `fw_version`. View không xuất `device_key` hoặc `sku`.
 - `test_result`, `test_station`, `test_person`, `tested_at`.

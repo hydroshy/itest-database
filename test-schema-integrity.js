@@ -875,11 +875,11 @@ console.log('✓ Traceability migration 010 (multi-item_code per WA, composite u
 const trace012Sql = fs.readFileSync(path.join(__dirname, 'schemas/traceability-manager/migrations/012_fix_device_summary_app_eui.sql'), 'utf8');
 for (const sql of [trace012Sql, trace009SchemaSql]) {
   const view = sql.split(/CREATE (?:OR REPLACE )?VIEW traceability_manager\.v_device_summary AS/).pop().split('COMMENT ON VIEW traceability_manager.v_device_summary')[0];
-  assert.ok(view.includes('system_schema.device_test_registrations r'), 'Device summary must read persisted LoRaWAN App EUI');
-  assert.ok(view.includes("NULLIF(NULLIF(BTRIM(d.app_eui), ''), '0000000000000000')"), 'Device summary must ignore placeholder App EUI');
-  assert.ok(view.includes('ORDER BY') && view.includes('LIMIT 1'), 'Device summary must select one registration per device');
+  assert.ok(view.includes('finalconfig_manager.finalconfig_execution_log'), 'Device summary must check Final Config execution log');
+  assert.ok(view.includes('modbus_register_dec = 31'), 'Device summary must target LoRaWAN register 31');
+  assert.ok(view.includes('final_config_audit'), 'Device summary must inspect Final Config audit snapshot');
   assert.ok(!/\bd\.device_key\b|\bd\.sku\b/.test(view), 'Device summary must exclude device_key and sku');
 }
-console.log('✓ Traceability migration 012 (App EUI registration fallback and reduced device summary) validated');
+console.log('✓ Traceability migration 012 (App EUI final config readback and reduced device summary) validated');
 
 console.log('--- ALL INTEGRITY TESTS PASSED ---');
