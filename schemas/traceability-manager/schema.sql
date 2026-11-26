@@ -318,7 +318,7 @@ WITH wa_summary AS (
     wa.so_id,
     COALESCE(NULLIF(TRIM(wa.item_code), ''), 'UNKNOWN') AS item_code,
     SUM(COALESCE(wa.planned_quantity, 0)) AS planned_quantity,
-    COUNT(wa.id) AS wa_count
+    COUNT(DISTINCT wa.wa_number) AS wa_count
   FROM traceability_manager."traceability_wa" wa
   GROUP BY wa.so_id, COALESCE(NULLIF(TRIM(wa.item_code), ''), 'UNKNOWN')
 ),
