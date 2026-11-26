@@ -459,14 +459,13 @@ SELECT
   d.serial_number,
   d.dev_eui,
   COALESCE(
-    d.app_eui,
-    d.test_raw_data->>'app_eui',
-    d.test_raw_data->>'appeui',
-    d.test_raw_data->'lorawan'->>'app_eui',
-    d.test_raw_data->'lorawan'->>'appeui',
-    d.test_raw_data->'comparison'->>'app_eui',
-    dtr.app_eui,
-    '0000000000000000'
+    NULLIF(NULLIF(BTRIM(d.app_eui), ''), '0000000000000000'),
+    NULLIF(NULLIF(BTRIM(d.test_raw_data->>'app_eui'), ''), '0000000000000000'),
+    NULLIF(NULLIF(BTRIM(d.test_raw_data->>'appeui'), ''), '0000000000000000'),
+    NULLIF(NULLIF(BTRIM(d.test_raw_data->'lorawan'->>'app_eui'), ''), '0000000000000000'),
+    NULLIF(NULLIF(BTRIM(d.test_raw_data->'lorawan'->>'appeui'), ''), '0000000000000000'),
+    NULLIF(NULLIF(BTRIM(d.test_raw_data->'comparison'->>'app_eui'), ''), '0000000000000000'),
+    dtr.app_eui
   ) AS app_eui,
   COALESCE(
     d.app_key,
@@ -474,9 +473,7 @@ SELECT
     d.test_raw_data->'final_config_audit'->>'app_key',
     dtr.app_key
   ) AS app_key,
-  d.device_key,
   COALESCE(d.item_code, wa.item_code) AS item_code,
-  d.sku,
   d.hw_version,
   d.fw_version,
   so.id AS so_id,
@@ -510,7 +507,14 @@ FROM traceability_manager.traceability_device d
 JOIN traceability_manager.traceability_so so ON d.so_id = so.id
 LEFT JOIN traceability_manager.traceability_wa wa ON d.wa_id = wa.id
 LEFT JOIN finalconfig_manager.finalconfig_execution_session fcs ON d.final_config_session_id = fcs.id
-LEFT JOIN system_schema.device_test_registrations dtr ON d.serial_number = dtr.serial_number;
+LEFT JOIN LATERAL (
+  SELECT NULLIF(NULLIF(BTRIM(r.app_eui), ''), '0000000000000000') AS app_eui, r.app_key
+  FROM system_schema.device_test_registrations r
+  WHERE r.serial_number = d.serial_number
+    AND (NULLIF(NULLIF(BTRIM(r.app_eui), ''), '0000000000000000') IS NOT NULL OR r.app_key IS NOT NULL)
+  ORDER BY (NULLIF(NULLIF(BTRIM(r.app_eui), ''), '0000000000000000') IS NOT NULL) DESC, r.created_at DESC, r.id DESC
+  LIMIT 1
+) dtr ON true;
 
 COMMENT ON VIEW traceability_manager.v_device_summary IS 'Metabase Analytical View: Comprehensive device tracking view exposing dev_eui, app_key, app_eui, serial_number, hardware test results, and final config details.';
 
