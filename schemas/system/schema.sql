@@ -84,9 +84,17 @@ CREATE TABLE IF NOT EXISTS system_schema."core_plugins" (
   "uiEntry" JSONB,
   "backendEntry" JSONB,
   "permissions" JSONB DEFAULT '[]',
+  "isBuiltIn" BOOLEAN DEFAULT false,
+  "lastError" TEXT,
+  "config" JSONB DEFAULT '{}',
   "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
   "updatedAt" TIMESTAMP NOT NULL DEFAULT now()
 );
+
+ALTER TABLE system_schema."core_plugins"
+  ADD COLUMN IF NOT EXISTS "isBuiltIn" BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS "lastError" TEXT,
+  ADD COLUMN IF NOT EXISTS "config" JSONB DEFAULT '{}';
 
 -- 7. Plugin Security and Operation Audit Logs
 CREATE TABLE IF NOT EXISTS system_schema."plugin_audit_logs" (

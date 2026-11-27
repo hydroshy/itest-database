@@ -69,6 +69,7 @@ const requiredFiles = [
   'schemas/finalconfig-manager/migrations/005_add_operator_to_finalconfig_execution_session.sql',
   'schemas/system/migrations/030_create_so_tested_devices_view.sql',
   'schemas/system/migrations/031_sync_all_system_menu_items_and_rbac.sql',
+  'schemas/system/migrations/032_add_builtin_and_config_to_core_plugins.sql',
   'scripts/migrate.js'
 ];
 
